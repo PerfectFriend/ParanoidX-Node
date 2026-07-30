@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/middleware"
 )
 
 // DividendAdminHandler manages dividend rounds: GET lists history, POST triggers a new distribution.

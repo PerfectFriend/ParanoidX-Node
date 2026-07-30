@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ===== simplex-node USB Backup Script =====
+# ===== ParanoidX USB Backup Script =====
 # Streams backup directly to USB (no /tmp space needed).
 # Usage: bash scripts/backup-to-usb.sh [--path /mnt/usb]
 
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 HOSTNAME="$(hostname)"
 DATE="$(date +%Y%m%d-%H%M%S)"
-BACKUP_NAME="simplex-node-backup-${HOSTNAME}-${DATE}"
+BACKUP_NAME="ParanoidX-backup-${HOSTNAME}-${DATE}"
 CUSTOM_PATH=""
 RC=0
 
@@ -23,7 +23,7 @@ for arg in "$@"; do
 done
 
 DATA_DIR="$HOME/.local/share/simplex-node"
-GO_BIN="$HOME/bin/simplex-node"
+GO_BIN="$HOME/bin/ParanoidX"
 FLUTTER_DIR="$HOME/.local/bin/the-isle"
 
 # === Determine destination ===
@@ -61,7 +61,7 @@ echo -e "${YELLOW}Building backup archive (streaming to USB)...${NC}"
   echo "User: $(whoami)"
   echo "Git: $(cd "$PROJECT_DIR" && git rev-parse HEAD 2>/dev/null || echo '?')"
   echo "Version: $(curl -s http://localhost:8080/api/version 2>/dev/null | grep -oP '"build":"[^"]*"' | tr -d '"' || echo 'not running')"
-) | tar -cf "$BACKUP_FILE" --transform="s|.*|simplex-node-backup/backup-info.txt|" -T - 2>/dev/null
+) | tar -cf "$BACKUP_FILE" --transform="s|.*|ParanoidX-backup/backup-info.txt|" -T - 2>/dev/null
 
 # Step 2: git bundle (portable git history)
 GIT_BUNDLE_FILE="$BACKUP_DIR/${BACKUP_NAME}.gitbundle"
@@ -77,21 +77,21 @@ echo -e "  Adding codebase..."
   --exclude='opencode-config-backup/node_modules' \
   --exclude='.kilo/node_modules' \
   --exclude='node_modules' \
-  --transform="s|^|simplex-node-backup/codebase/|" . 2>/dev/null) || RC=1
+  --transform="s|^|ParanoidX-backup/codebase/|" . 2>/dev/null) || RC=1
 
 # Step 3b: session context backup
 echo -e "  Adding session context..."
 for src in "$PROJECT_DIR/AGENTS.md" "$HOME/.opencode/sessions"*; do
   [ -e "$src" ] || continue
   (cd "$(dirname "$src")" && tar -rf "$BACKUP_FILE" \
-    --transform="s|^$(basename "$src")$|simplex-node-backup/session/$(basename "$src")|" \
+    --transform="s|^$(basename "$src")$|ParanoidX-backup/session/$(basename "$src")|" \
     "$(basename "$src")" 2>/dev/null) || true
 done
 # Also copy the latest session files from .opencode if exists
 if [ -d "$PROJECT_DIR/.opencode" ]; then
   (cd "$PROJECT_DIR" && tar -rf "$BACKUP_FILE" \
     --exclude='.opencode/node_modules' \
-    --transform="s|^\.opencode|simplex-node-backup/session/opencode|" \
+    --transform="s|^\.opencode|ParanoidX-backup/session/opencode|" \
     ".opencode" 2>/dev/null) || true
 fi
 
@@ -100,27 +100,27 @@ echo -e "  Adding data dir..."
 (cd "$HOME" && tar -rf "$BACKUP_FILE" \
   --exclude='.local/share/simplex-node/vault/.vault_reserve' \
   --exclude='.local/share/simplex-node/vault/.reserved' \
-  --transform="s|^|simplex-node-backup/data/|" \
+  --transform="s|^|ParanoidX-backup/data/|" \
   ".local/share/simplex-node" 2>/dev/null) || RC=1
 
 # Step 5: Flutter bundle
 echo -e "  Adding Flutter bundle..."
 (cd "$HOME" && tar -rf "$BACKUP_FILE" \
-  --transform="s|^|simplex-node-backup/flutter/|" \
+  --transform="s|^|ParanoidX-backup/flutter/|" \
   ".local/bin/the-isle" 2>/dev/null) || RC=1
 
 # Step 6: Go binary
 echo -e "  Adding Go binary..."
 (cd "$HOME" && tar -rf "$BACKUP_FILE" \
-  --transform="s|^|simplex-node-backup/bin/|" \
-  "bin/simplex-node" 2>/dev/null) || RC=1
+  --transform="s|^|ParanoidX-backup/bin/|" \
+  "bin/ParanoidX" 2>/dev/null) || RC=1
 
 # Step 7: opencode config + context
 echo -e "  Adding context files..."
 for src in "$HOME/.config/opencode" "$PROJECT_DIR/.opencode" "$PROJECT_DIR/AGENTS.md"; do
   [ -e "$src" ] || continue
   (cd "$(dirname "$src")" && tar -rf "$BACKUP_FILE" \
-    --transform="s|^$(basename "$src")$|simplex-node-backup/config/$(basename "$src")|" \
+    --transform="s|^$(basename "$src")$|ParanoidX-backup/config/$(basename "$src")|" \
     "$(basename "$src")" 2>/dev/null) || true
 done
 
@@ -140,7 +140,7 @@ cp "$SCRIPT_DIR/restore-from-usb.sh" "${BACKUP_DIR}/restore-from-usb.sh" 2>/dev/
 # === Rotation: keep latest 5 backups ===
 echo -e "\n${YELLOW}Rotating old backups (keeping 5 latest)...${NC}"
 # Keep only the 5 newest .tar.gz files, remove older ones
-ls -t "${BACKUP_DIR}/"simplex-node-backup-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r -I{} sh -c 'rm -f "$1" "${1%.gz}.sha256" "${1%.tar.gz}.gitbundle" 2>/dev/null; echo "  Removed: $(basename "$1")"' -- {}
+ls -t "${BACKUP_DIR}/"ParanoidX-backup-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r -I{} sh -c 'rm -f "$1" "${1%.gz}.sha256" "${1%.tar.gz}.gitbundle" 2>/dev/null; echo "  Removed: $(basename "$1")"' -- {}
 
 # === Verify ===
 echo -e "\n${YELLOW}Verifying...${NC}"

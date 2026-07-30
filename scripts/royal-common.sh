@@ -5,7 +5,7 @@
 
 # Base (override via env if testing in other home)
 : "${ROYAL_BASE:=$HOME}"
-: "${SIMPLEX_SRC:=${ROYAL_BASE}/simplex-node}"
+: "${${PARANOIDX_SRC:-$HOME/ParanoidX}:=${ROYAL_BASE}/simplex-node}"
 : "${DATA_DIR:=${ROYAL_BASE}/.local/share/simplex-node}"
 
 # Config
@@ -18,8 +18,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="$SCRIPT_DIR"
 
 # Key files / bins
-BIN="${ROYAL_BASE}/bin/simplex-node"
-NODE_SRC_DIR="$SIMPLEX_SRC/cmd/simplex-node"
+BIN="${ROYAL_BASE}/bin/ParanoidX"
+NODE_SRC_DIR="$SIMPLEX_SR./cmd/ParanoidX"
 LAUNCH_NODE="$SCRIPTS_DIR/launch-node.sh"
 LAUNCH_BOT="$SCRIPTS_DIR/launch-bot-listener.sh"
 LISTENER="$SCRIPTS_DIR/royal-telegram-command-listener.sh"
@@ -57,7 +57,7 @@ load_token() {
 
 # For python -c that need paths: export them before python
 export_royal_env() {
-  export ROYAL_BASE SIMPLEX_SRC DATA_DIR TOKEN_FILE CHAT_FILE OFFSET_FILE SCRIPT_DIR SCRIPTS_DIR BIN PLAN_SNAPSHOT
+  export ROYAL_BASE ${PARANOIDX_SRC:-$HOME/ParanoidX} DATA_DIR TOKEN_FILE CHAT_FILE OFFSET_FILE SCRIPT_DIR SCRIPTS_DIR BIN PLAN_SNAPSHOT
 }
 
 # Note: after source, scripts can use $DATA_DIR etc instead of hard /home/tomas/...

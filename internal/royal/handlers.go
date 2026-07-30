@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/middleware"
 )
 
 // RegisterHandler handles POST /api/royal/register (sub-node registration).

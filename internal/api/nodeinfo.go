@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/middleware"
 )
 
 // ServiceStatus represents the health state of a single service.
@@ -402,7 +402,7 @@ func collectNodeInfo(dataDir, listenAddr, version string, startTime time.Time) *
 
 	info := &NodeInfoResponse{
 		Version:    version,
-		Build:      fmt.Sprintf("simplex-node-%s", version),
+		Build:      fmt.Sprintf("px-node-%s", version),
 		Uptime:     fmt.Sprintf("%dh%dm", int(uptime.Hours()), int(uptime.Minutes())%60),
 		Started:    startTime.Format(time.RFC3339),
 		GoVersion:  runtime.Version(),

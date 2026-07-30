@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"simplex-node/internal/radio"
+	"ParanoidX/internal/radio"
 )
 
 func newTestRadio(t *testing.T) (*radio.RadioService, *radio.AnnouncementStore) {

@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"simplex-node/internal/crypto/bip39"
+	"ParanoidX/internal/crypto/bip39"
 )
 
 // BIP39GenerateHandler creates a new BIP39 mnemonic.

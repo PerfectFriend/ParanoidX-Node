@@ -1,6 +1,6 @@
 #!/bin/bash
 # Build Royal Flutter Client on Linux
-# Run from simplex-node directory
+# Run from ParanoidX directory
 
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

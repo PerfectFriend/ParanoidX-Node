@@ -20,7 +20,7 @@ type DockerV2RayManager struct {
 func NewDockerV2RayManager(composeDir string) *DockerV2RayManager {
 	return &DockerV2RayManager{
 		ComposeDir: composeDir,
-		Container:  "simplex-node-v2ray",
+		Container:  "ParanoidX-v2ray",
 	}
 }
 

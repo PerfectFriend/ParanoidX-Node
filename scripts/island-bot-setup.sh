@@ -32,7 +32,7 @@ if [ -f "$SCRIPT_DIR/royal-common.sh" ]; then
   source "$SCRIPT_DIR/royal-common.sh"
 else
   : "${DATA_DIR:=$HOME/.local/share/simplex-node}"
-  : "${SIMPLEX_SRC:=$HOME/simplex-node}"
+  : "${${PARANOIDX_SRC:-$HOME/ParanoidX}:=$HOME/ParanoidX}"
 fi
 
 ISLAND_BIN_DIR="${HOME}/bin"
@@ -84,8 +84,8 @@ get_our_smp() {
   local smp=""
   if [ -f "$DATA_DIR/smp_client_address.txt" ]; then
     smp=$(cat "$DATA_DIR/smp_client_address.txt" | tr -d '\r\n')
-  elif [ -f "$SIMPLEX_SRC/docker/smp_client_address.txt" ]; then
-    smp=$(cat "$SIMPLEX_SRC/docker/smp_client_address.txt" | tr -d '\r\n')
+  elif [ -f "$${PARANOIDX_SRC:-$HOME/ParanoidX}/docker/smp_client_address.txt" ]; then
+    smp=$(cat "$${PARANOIDX_SRC:-$HOME/ParanoidX}/docker/smp_client_address.txt" | tr -d '\r\n')
   fi
   echo "$smp"
 }

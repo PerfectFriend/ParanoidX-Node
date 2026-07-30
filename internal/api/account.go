@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"simplex-node/internal/crypto/bip39"
+	"ParanoidX/internal/crypto/bip39"
 )
 
 type accountCreateResp struct {

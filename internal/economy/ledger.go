@@ -25,8 +25,8 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/crypto/bip39"
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/crypto/bip39"
+	"ParanoidX/internal/fileutil"
 )
 
 // Ledger holds all Liquid Taler accounts.

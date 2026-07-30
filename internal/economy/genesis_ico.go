@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // GenesisTokensPerCard — количество токенов генезиса на 1 карту.

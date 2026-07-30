@@ -10,7 +10,7 @@ import (
 		"path/filepath"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // BuybackQuote is the price quote for buying back a single banknote.

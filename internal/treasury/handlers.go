@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/fileutil"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/fileutil"
+	"ParanoidX/internal/middleware"
 )
 
 // InitSilverRoundHandler handles POST /api/treasury/init-silver-round.

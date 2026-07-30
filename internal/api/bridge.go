@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"simplex-node/internal/crypto/eth"
+	"ParanoidX/internal/crypto/eth"
 )
 
 var bridgeRegistry = eth.NewBridgeRegistry()

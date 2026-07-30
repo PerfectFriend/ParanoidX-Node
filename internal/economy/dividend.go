@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // DividendWeighted рассчитывает вес банкноты для распределения дивидендов:

@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // OnboardingState tracks a user's progress through the new-user onboarding flow.

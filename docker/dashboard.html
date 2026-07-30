@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PX Node • Dashboard</title>
+<style>
+:root { --bg:#0a0a0c; --card:#141418; --accent:#3b82f6; --danger:#ef4444; --ok:#22c55e; --text:#e5e7eb; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; line-height:1.5; }
+header { background:#111114; padding:14px 24px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #222; position:sticky; top:0; z-index:100; }
+h1 { margin:0; font-size:1.35rem; letter-spacing:-0.03em; }
+.badge { background:#222; padding:2px 9px; border-radius:999px; font-size:0.7rem; color:#aaa; }
+.card { background:var(--card); border-radius:14px; padding:18px 20px; margin:16px 20px; border:1px solid #222; box-shadow:0 8px 24px rgba(0,0,0,0.3); }
+h2 { margin:0 0 12px; font-size:1.05rem; display:flex; align-items:center; gap:8px; }
+button { background:var(--accent); color:#fff; border:none; padding:9px 16px; border-radius:9px; font-size:0.92rem; font-weight:500; cursor:pointer; }
+button:hover { transform:scale(1.015); }
+button.danger { background:var(--danger); }
+button.secondary { background:#2a2a30; }
+button.success { background:#16a34a; }
+.addr { font-family:ui-monospace,monospace; background:#0f0f12; padding:9px 11px; border-radius:8px; word-break:break-all; font-size:0.86rem; margin:6px 0; border:1px solid #222; }
+.row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); align-items:center; justify-content:center; z-index:99999; }
+.modal-content { background:#16161b; padding:22px; border-radius:14px; max-width:380px; width:94%; text-align:center; }
+#qrImg { max-width:260px; background:white; padding:10px; border-radius:8px; margin:10px auto; display:block; }
+.lock-overlay { display:none; position:fixed; inset:0; background:#000; z-index:999999; align-items:center; justify-content:center; flex-direction:column; }
+.lock-box { background:#16161b; padding:28px 26px; border-radius:16px; width:340px; max-width:94%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.7); }
+.lock-box input { font-size:1.35rem; padding:12px 10px; width:100%; text-align:center; border-radius:8px; border:1px solid #333; background:#0f0f12; color:#fff; letter-spacing:6px; font-weight:700; }
+.lock-error { color:#fff; background:#b91c1c; margin:10px 0; padding:8px 10px; border-radius:6px; font-weight:700; min-height:22px; }
+.step { display:none; }
+.step.active { display:block; }
+.hint { font-size:0.82rem; opacity:0.75; margin-top:4px; }
+
+/* Mobile / smartphone responsive layout */
+@media (max-width: 640px) {
+  header {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  h1 { font-size: 1.15rem; }
+  .badge { font-size: 0.6rem; padding: 1px 6px; }
+  header button {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  .card {
+    margin: 10px 8px;
+    padding: 14px 14px;
+    border-radius: 12px;
+  }
+  h2 { font-size: 0.95rem; }
+  .addr {
+    font-size: 0.78rem;
+    padding: 8px 10px;
+  }
+  button {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+  }
+  .row {
+    gap: 6px;
+  }
+  .modal-content {
+    width: 96%;
+    padding: 16px;
+  }
+  #qrImg {
+    max-width: 220px;
+  }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PX Node</h1>
+  <span class="badge" id="buildVersionBadge">b30</span>
+  <span class="badge">SMP + XFTP • Onion</span>
+  <button onclick="rotateAddresses()" class="secondary" style="margin-left:auto;padding:6px 12px;font-size:0.82rem;">🔄 СГЕНЕРИРОВАТЬ НОВЫЕ АДРЕСА</button>
+  <button onclick="lockDashboard()" class="secondary" style="padding:6px 12px;font-size:0.82rem;">🔒 Lock</button>
+  <button id="changeCodeBtn" onclick="openChangeCodeModal()" class="secondary" style="padding:6px 12px;font-size:0.82rem;">🔑 Сменить код</button>
+  <span id="containerBadge" style="display:inline-block;padding:3px 8px;border-radius:4px;font-size:0.75rem;background:#333;color:#999;">📦 --</span>
+  <button onclick="triggerPanic()" class="danger" style="padding:6px 12px;font-size:0.82rem;">🚨 PANIC</button>
+  <button onclick="openRestoreModal()" class="secondary" style="padding:6px 12px;font-size:0.82rem;">📂 Restore Config</button>
+</header>
+
+<div class="card" style="text-align:center; border:2px solid #3b82f6; background:linear-gradient(180deg, #14141e 0%, var(--card) 100%);">
+  <h2 style="justify-content:center; font-size:1.2rem;">🏝️ КАНАЛ ОСТРОВА — ДОБАВЬ КОНТАКТ</h2>
+  <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+    <img id="heroQr" src="/static/qr-island-services.png" alt="QR контакт Острова"
+      style="width:200px; height:200px; background:white; padding:8px; border-radius:12px; cursor:pointer;"
+      onclick="showQR('Контакт Острова', contactAddr)">
+    <div id="heroContactAddr" class="addr" style="font-size:0.7rem; max-width:100%; text-align:center;"></div>
+    <div class="row" style="justify-content:center; margin-top:4px;">
+      <button onclick="copyText(contactAddr)" style="background:#16a34a;">COPY контакт</button>
+      <button onclick="showQR('Контакт Острова', contactAddr)">ПОКАЗАТЬ QR КОД</button>
+    </div>
+    <div class="hint" style="font-size:0.75rem;">Отсканируй QR в SimpleX Chat → добавить контакт</div>
+  </div>
+</div>
+
+<script>
+let contactAddr = '';
+let heroPollAttempt = 0;
+const HERO_POLL_MAX = 60;
+async function refreshHeroContact() {
+  try {
+    const r = await fetch('/api/addresses');
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    const link = d && d.contact;
+    if (link) {
+      contactAddr = link;
+      const el = document.getElementById('heroContactAddr');
+      if (el) {
+        el.textContent = link.length > 90 ? link.slice(0,42)+'…'+link.slice(-40) : link;
+        el.title = link;
+      }
+      const img = document.getElementById('heroQr');
+      if (img) img.src = '/static/qr-island-services.png?t=' + Date.now();
+    }
+  } catch(e) { /* retry later */ }
+}
+(function pollHero(){
+  if (contactAddr) return;
+  if (heroPollAttempt >= HERO_POLL_MAX) {
+    document.getElementById('heroContactAddr').textContent = 'Контакт пока не получен — перезагрузи страницу';
+    return;
+  }
+  heroPollAttempt++;
+  const delay = Math.min(800 * Math.pow(1.5, heroPollAttempt), 30000);
+  setTimeout(()=>refreshHeroContact().then(pollHero,pollHero), delay);
+})();
+</script>
+
+<div class="card">
+  <h2>📡 Статус узла <span id="buildVersionDisplay" style="font-size:0.7rem; opacity:0.6; font-weight:normal;">(b30)</span></h2>
+  <div id="status">Загрузка...</div>
+  <div id="node-meta" style="margin-top:8px; font-size:0.85rem; opacity:0.75;"></div>
+  <div id="health-checks" style="margin-top:8px; font-size:0.78rem;"></div>
+  <div id="usb-status" style="margin-top:4px; font-size:0.75rem;"></div>
+  <div class="row" style="margin-top:12px;">
+    <button onclick="refreshAll()">Обновить</button>
+    <button onclick="forceRefreshRichStatus()" style="background:#f59e0b;">Обновить данные узла</button>
+    <button onclick="restartNode()" style="background:#ef4444;">Полная перезагрузка</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔗 Адреса серверов (SimpleX Chat)</h2>
+  <div id="addresses">Загрузка...</div>
+  <div class="hint">Адреса укорочены. COPY копирует полный. «ПОКАЗАТЬ QR КОД» показывает реальный PNG.</div>
+</div>
+
+<!-- Dashboard Onion - shown ONLY when accessed via 127.0.0.1 (never over .onion) -->
+<div class="card" id="dashboard-onion-card" style="display:none; border: 2px solid #3b82f6;">
+  <h2>🔐 Dashboard Onion (только локальный доступ)</h2>
+  <div id="dashboard-onion-addr" class="addr" style="font-size:0.9rem;"></div>
+  <div class="hint">Этот адрес и QR показываются только при прямом доступе по 127.0.0.1. Через .onion секция скрыта.</div>
+  <div class="row" style="margin-top:10px;">
+    <button onclick="copyDashboardOnion()" style="background:#16a34a;">COPY адрес</button>
+    <button onclick="showDashboardQR()">ПОКАЗАТЬ QR КОД</button>
+  </div>
+  <div style="font-size:0.72rem; margin-top:6px; opacity:0.7;">Для защищённого TLS TURN (turns://): <a href="/static/turn_cert.pem" download>скачай и доверь сертификат turn_cert.pem</a> в браузере (только здесь, при 127.0.0.1).</div>
+</div>
+
+<!-- ICE/TURN address - always shown (for configuring voice clients), uses our hidden onion -->
+<div class="card" id="ice-card" style="border: 2px solid #8b5cf6;">
+  <h2>🧊 ICE / TURN (WebRTC голос и видео)</h2>
+  <div id="ice-addr" class="addr" style="font-size:0.9rem;">Загрузка адреса TURN сервера...</div>
+  <div class="hint">Наш скрытый TURN для релея аудио/видео когда P2P невозможно. Для реальных звонков в SimpleX Chat настройте ICE ниже.</div>
+
+  <div id="ice-paste-section" style="margin-top:10px; background:#111; padding:8px; border-radius:6px; font-size:0.82rem; display:none;">
+    <div style="font-weight:600; margin-bottom:4px; color:#c4b5fd;">Для SimpleX клиента (вставь в настройки звонков):</div>
+    <div style="font-size:0.75rem; opacity:0.85; margin-bottom:4px;">Настройки → Аудио и видео звонки → WebRTC ICE серверы → включи «Настроить ICE серверы» → вставь строки (по одной):</div>
+    <div id="ice-paste-lines" style="font-family:monospace; background:#0a0a0c; padding:6px; border-radius:4px; word-break:break-all; line-height:1.3;"></div>
+    <div class="row" style="margin-top:6px; gap:6px;">
+      <button onclick="copyPasteLine(0)" style="background:#16a34a; padding:2px 8px; font-size:0.75rem;">COPY tcp (рекомендую)</button>
+      <button onclick="copyPasteLine(1)" style="background:#16a34a; padding:2px 8px; font-size:0.75rem;">COPY turns (TLS)</button>
+      <button onclick="refreshIceCreds()" style="background:#6366f1; padding:2px 8px; font-size:0.75rem;">Обновить креды (~12ч)</button>
+    </div>
+    <div style="font-size:0.7rem; opacity:0.7; margin-top:4px;">Креды действуют ~12 часов. Скачай и доверь сертификат для turns: <a href="/static/turn_cert.pem" download style="color:#a5b4fc;">turn_cert.pem</a> (только при 127.0.0.1 или onion дашборда)</div>
+  </div>
+
+  <div class="row" style="margin-top:10px;">
+    <button onclick="copyIceOnion()" style="background:#16a34a;">COPY turn URL</button>
+    <button onclick="showIceQR()">ПОКАЗАТЬ QR КОД</button>
+  </div>
+</div>
+
+<!-- Auditor Dashboard — отдельный вход для топ-10 аудиторов -->
+<div class="card" id="auditor-card" style="border: 2px solid #f59e0b; display:none;">
+  <h2>🔍 Auditor Dashboard (топ-10 аудиторов)</h2>
+  <div id="auditor-addr" class="addr" style="font-size:0.9rem;">Загрузка...</div>
+  <div class="hint" style="margin-top:6px;">
+    Доступ: первый инвестор + топ-9 держателей Liquid Taler.<br>
+    Метрики казны, разведка держателей банкнот, P2P офферы (прямые предложения о покупке любому держателю).
+    <span style="color:#fbbf24;">Дофамин-трейдинг без аукциона.</span>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <button onclick="copyAuditorOnion()" style="background:#d97706;">COPY Auditor URL</button>
+    <button onclick="showAuditorQR()">ПОКАЗАТЬ QR КОД</button>
+  </div>
+  <div style="font-size:0.7rem; margin-top:6px; opacity:0.7;">Для входа нужен pubkey из аудиторского кошелька.</div>
+</div>
+
+<!-- Genesis Holy Grail — Священный Грааль -->
+<div class="card" id="genesis-grail-card" style="border: 2px solid #ffd700; background: linear-gradient(135deg, #1a0a00 0%, #2d1f00 50%, #1a0a00 100%); display:none;">
+  <h2 style="color:#ffd700;">⚜️ СВЯТОЙ ГРААЛЬ ГЕНЕЗИСА</h2>
+  <div id="genesis-grail-content" style="font-size:0.82rem; line-height:1.5;">
+    <div style="color:#ffd700; font-weight:600; margin-bottom:6px;">Источник вечной жизни и бесконечного успеха.</div>
+    <div id="genesis-cards-list" style="margin:6px 0;"></div>
+    <div id="genesis-announcement-text" style="margin-top:8px; padding:8px; background:#00000033; border-radius:4px; font-style:italic; color:#d4a017; font-size:0.78rem; border-left: 2px solid #ffd700;"></div>
+    <div id="genesis-lock-status" style="margin-top:6px; padding:4px 8px; background:#3d1f00; border-radius:4px; font-size:0.75rem;">
+      🔒 Заблокированы до выполнения смарт-контракта. Ты их видишь — они твои, но неприкосновенны, пока казна не достигнет 3× месячных операций.
+    </div>
+  </div>
+</div>
+
+<!-- A2 Economy cards: Pack Shop, Buyback, Auction -->
+<div class="card" style="border: 2px solid #06b6d4;">
+  <h2>📦 Pack Shop (Бустеры)</h2>
+  <div class="hint">Купи бустер: 5 случайных банкнот (гарантия ≥1 Rare+). Цена = сумма номиналов.</div>
+  <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <input id="pack-pubkey" placeholder="pubkey" style="flex:1; min-width:180px; background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px;">
+    <button onclick="buyPack()" style="background:#0891b2;">КУПИТЬ</button>
+    <button onclick="listPacks()" style="background:#0891b2;">МОИ ПАКИ</button>
+  </div>
+  <div id="pack-result" style="margin-top:6px; font-size:0.82rem;"></div>
+  <div id="pack-open-area" style="margin-top:6px; display:none;">
+    <input id="pack-open-id" placeholder="pack_id" style="background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px; width:250px;">
+    <button onclick="openPack()" style="background:#0891b2;">ОТКРЫТЬ</button>
+  </div>
+  <div id="pack-list-result" style="margin-top:6px; font-size:0.78rem;"></div>
+</div>
+
+<div class="card" style="border: 2px solid #f97316;">
+  <h2>🔄 Treasury Buyback (Выкуп казной)</h2>
+  <div class="hint">Common −2.28%, Rare/Epic/Legendary по номиналу. Golden/Special/Genesis — только аукцион.</div>
+  <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <input id="buyback-pubkey" placeholder="pubkey" style="flex:1; min-width:160px; background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px;">
+    <input id="buyback-serial" placeholder="serial" style="flex:1; min-width:180px; background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px;">
+    <button onclick="buybackQuote()" style="background:#ea580c;">КОТИРОВКА</button>
+    <button onclick="buybackSell()" style="background:#dc2626;">ПРОДАТЬ</button>
+  </div>
+  <div id="buyback-result" style="margin-top:6px; font-size:0.82rem;"></div>
+</div>
+
+<div class="card" style="border: 2px solid #a855f7;">
+  <h2>🔨 Auction House (Аукцион)</h2>
+  <div class="hint">Выстави банкноту на 27ч. Proxy-ставки, авто-продление последних 5 минут. Комиссия 5%.</div>
+  <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <input id="auc-pubkey" placeholder="pubkey" style="flex:1; min-width:150px; background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px;">
+    <input id="auc-serial" placeholder="serial" style="flex:1; min-width:160px; background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px;">
+    <input id="auc-start" placeholder="start price ng" style="width:120px; background:#1a1a2e; color:white; border:1px solid #333; padding:5px; border-radius:4px;">
+    <button onclick="auctionList()" style="background:#7c3aed;">ВЫСТАВИТЬ</button>
+    <button onclick="auctionRefresh()" style="background:#7c3aed;">АКТИВНЫЕ</button>
+    <button onclick="auctionMy()" style="background:#7c3aed;">МОИ</button>
+  </div>
+  <div id="auc-result" style="margin-top:6px; font-size:0.82rem;"></div>
+  <div id="auc-active-result" style="margin-top:6px; font-size:0.78rem;"></div>
+</div>
+
+<!-- Island Royal Services Contact — SimpleX Chat as transport to ALL services (Phase 6) -->
+<!-- The real magic: one E2EE contact in any stock SimpleX app unlocks wallet, radio (funnel anns + vault library), vault, market, tokenizer of everything, ID/NFC passports, channels. -->
+<div class="card" id="island-services-card" style="border: 2px solid #10b981; background: linear-gradient(180deg, #052e16 0%, #111 100%);">
+  <h2>🛎️ Сервисы Острова — Royal Treasure (SimpleX контакт)</h2>
+  <div style="font-size:0.72rem; line-height:1.35; margin-bottom:6px; color:#86efac;">
+    Добавь <b>один контакт</b> в любом приложении SimpleX Chat — и вся душа Treasure Island в твоих руках.<br>
+    E2EE по протоколу SimpleX (наш SMP как транспорт) + XFTP для vault/радио/доказательств.<br>
+    <span style="opacity:0.85;">/wallet /radio /vault /market /tokenize /id /channels /help — или меню команд в чате.</span>
+  </div>
+  <div id="island-contact-addr" class="addr" style="font-size:0.78rem; background:#052e16; color:#a3e635; padding:4px 6px; border-radius:4px; word-break:break-all;">Загрузка контакта Королевских Сервисов...</div>
+  <div class="row" style="margin-top:6px; gap:4px; flex-wrap:wrap;">
+    <button onclick="copyIslandContact()" style="background:#16a34a; padding:2px 6px; font-size:0.7rem;">COPY полный контакт</button>
+    <button onclick="showIslandQR()" style="background:#eab308; padding:2px 6px; font-size:0.7rem;">ПОКАЗАТЬ QR</button>
+    <button onclick="refreshIslandContact()" style="background:#3b82f6; padding:2px 6px; font-size:0.7rem;">Обновить</button>
+  </div>
+  <div style="font-size:0.62rem; margin-top:4px; opacity:0.75; color:#bef575;">
+    Полная инструкция и настоящий адрес — в client-connection-info.txt и в дашборде после bridge. Это вход в воронку, библиотеку, гражданство и экономику серебра.
+  </div>
+</div>
+
+<!-- TRON USDT Treasury for silver tokenization rounds (Island funding loop - A0+ plan) -->
+<div class="card" id="treasury-card" style="border: 2px solid #f59e0b;">
+  <h2>💰 Treasury (TRON USDT → Silver Rounds → TLR Dividends) [Royal] <span id="royal-badge" style="font-size:0.6rem; background:#111; padding:1px 4px; border-radius:2px;">checking...</span></h2>
+  <div style="font-size:0.7rem; margin-bottom:4px; line-height:1.3;">USDT TRC20 (public bring to treasury addr) → accumulate for broker payment → next silver batch from broker into Island reserve → tokenize batch (ng silver) + 20% to treasury, 80% pro-rata ng dividends to registered <b>Mark Bank banknote holders (banknotes = equity shares)</b>. <b>Mathematical black hole / funnel for world silver</b>: ng yield incentivizes buying/holding more physical banknotes (registered as shares) → more capital chases yield → more USDT inflows to treasury → more silver bought/tokenized → larger future dividends → stronger pull. Royal node (this one when royal.enabled) has full control over tokenization/rounds/RWA across network. Later: "tokenization of everything" tool — silver ng backs arbitrary physical value (first: silver coins, physical MB banknotes, Island NFC passport tokens giving right to physical chip+ID+payment).</div>
+  <div id="treasury-state" style="font-family:monospace; font-size:0.6rem; background:#111; padding:3px; border-radius:3px; margin-bottom:4px; max-height:110px; overflow:auto; white-space:pre-wrap;">Loading live state (reserve ng/g/oz, shares+accrued, rounds, RWA)...</div>
+  <div class="row" style="gap:3px; flex-wrap:wrap; margin-bottom:3px;">
+    <input id="simUsdt" value="5000" style="width:60px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.65rem;">
+    <button onclick="simulateUsdt()" style="background:#eab308; padding:1px 3px; font-size:0.65rem;">Sim USDT</button>
+    <button onclick="checkUsdtDeposits()" style="background:#f59e0b; padding:1px 3px; font-size:0.65rem;">Check TRON</button>
+    <button onclick="initSilverRound()" style="background:#ef4444; padding:1px 3px; font-size:0.65rem;">Init Round (Royal)</button>
+    <button onclick="refreshTreasuryState()" style="background:#3b82f6; padding:1px 3px; font-size:0.65rem;">Refresh State</button>
+  </div>
+  <div style="font-size:0.65rem; margin-bottom:3px; border-top:1px dashed #333; padding-top:3px;">
+    <b>Register Banknote as Share</b> (gets ng divs from future rounds):
+    <input id="bnSerial" placeholder="serial e.g. MB-2026-042" value="MB-DEMO-5" style="width:90px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <input id="bnDenom" placeholder="TLR" value="5" style="width:40px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <input id="bnHolder" placeholder="holder" value="new-citizen" style="width:70px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <button onclick="registerBanknoteShare()" style="background:#a78bfa; padding:1px 3px; font-size:0.65rem;">Register Share</button>
+  </div>
+  <div style="font-size:0.65rem; margin-bottom:3px;">
+    RWA / Tokenization of Everything (silver ng backing physical value; royal issues SILVER-BACKED- token):
+    <select id="rwaType" style="font-size:0.6rem; background:#111; color:#ddd;">
+      <option value="silver_coin">Silver Coin</option>
+      <option value="mark_banknote">Mark Bank Banknote (share)</option>
+      <option value="island_nfc_passport">Island NFC Passport (ID+pay)</option>
+    </select>
+    <input id="rwaSerial" placeholder="serial" value="DEMO-001" style="width:70px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <input id="rwaBacking" placeholder="backing ng" value="1000000000" style="width:70px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <input id="rwaHolder" placeholder="holder" value="demo" style="width:50px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <button onclick="registerRWA()" style="background:#10b981; padding:1px 3px; font-size:0.65rem;">Register RWA</button>
+  </div>
+  <div id="billing-mini" style="font-size:0.6rem; margin-top:4px; border-top:1px dashed #333; padding-top:3px;">
+    <b>Монетизация (в ng серебра)</b> — услуги ноды (раунды, токенизация) оплачиваются в той же единице, что производит воронка.
+    <span id="billing-prices" style="opacity:0.8"></span>
+    <div id="billing-payments" style="font-family:monospace; font-size:0.55rem; max-height:42px; overflow:auto; margin-top:2px;"></div>
+  </div>
+  <div style="font-size:0.55rem; opacity:0.7;">Set real funded TRON addr in ~/.local/share/ParanoidX/tron_treasury.txt (for live /usdt-deposits). Royal marker: royal.enabled . Full math + risks in docs/PLAN-A0.md + ISLAND.md . Part of each issue to treasury.</div>
+</div>
+
+<div class="card" style="border: 2px solid #22c55e;">
+  <h2>📻 Radio / Library (Vault + Round Announcements)</h2>
+  <div style="font-size:0.65rem; margin-bottom:4px;">Audio from your Vault + automatic announcements when new silver batches are tokenized (the economy becomes audible library content). Раунды воронки автоматически попадают в радио.</div>
+  <div id="radio-latest-round" style="background:#052e16; border:1px solid #22c55e; padding:6px; border-radius:4px; margin-bottom:6px; font-size:0.65rem; white-space:pre-wrap; display:none;"></div>
+  <div id="radio-list" style="font-family:monospace; font-size:0.6rem; background:#111; padding:4px; border-radius:3px; max-height:120px; overflow:auto;"></div>
+  <div style="margin-top:4px; display:flex; gap:6px; flex-wrap:wrap;">
+    <button onclick="loadRadio()" style="background:#22c55e; padding:1px 4px; font-size:0.65rem;">Refresh Radio</button>
+    <button onclick="showLatestRoundAnnouncement()" style="background:#166534; padding:1px 4px; font-size:0.65rem;">Показать последнее объявление раунда</button>
+    <span style="font-size:0.55rem; opacity:0.7; align-self:center;">Upload audio via Vault. Round announcements auto-appear after Init Round (black hole in your radio).</span>
+  </div>
+</div>
+
+<div class="card" style="border: 2px solid #a78bfa;">
+  <h2>📡 Анонимные медиаканалы (монетизация трафика в ng серебра)</h2>
+  <div style="font-size:0.65rem; margin-bottom:4px;">Публичные анонимные каналы. Доступ оплачивается в той же единице, что производит воронка (ng серебра). Позже — SMP-анонсы + реальная доставка контента + pay-per-view/трафик.</div>
+  <div id="channels-list" style="font-family:monospace; font-size:0.6rem; background:#111; padding:4px; border-radius:3px; max-height:100px; overflow:auto;"></div>
+  <div style="margin-top:4px;">
+    <button onclick="loadChannels()" style="background:#a78bfa; padding:1px 4px; font-size:0.65rem;">Refresh Channels</button>
+    <button onclick="showCreateChannelForm()" style="background:#7c3aed; padding:1px 4px; font-size:0.65rem;">Создать канал (royal/local)</button>
+  </div>
+  <div id="create-channel-form" style="display:none; margin-top:6px; font-size:0.6rem;">
+    Name: <input id="chName" style="width:120px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    Desc: <input id="chDesc" style="width:140px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    Price ng: <input id="chPrice" value="1000000000" style="width:70px; background:#111; color:#ddd; border:1px solid #555; padding:1px; font-size:0.6rem;">
+    <button onclick="createChannel()" style="background:#7c3aed; padding:1px 4px; font-size:0.6rem;">Create</button>
+  </div>
+  <div id="channel-access-result" style="font-size:0.55rem; margin-top:4px; opacity:0.8;"></div>
+</div>
+
+<div class="card">
+  <h2>📡 SMP Сервер</h2>
+  <div id="smp-info">Загрузка...</div>
+</div>
+
+<div class="card">
+  <h2>📦 XFTP Сервер</h2>
+  <div id="xftp-info">Загрузка...</div>
+</div>
+
+<div class="card">
+  <h2>💾 Хранилище</h2>
+  <div id="storage-info">Загрузка...</div>
+</div>
+
+<div class="card">
+  <h2>🔐 Global Cloud Vault (E2EE) — 2 GB quota</h2>
+  <div style="margin-bottom:8px; font-size:0.85rem; opacity:0.8;">Хранилище для заметок, медиа, файлов, аудио. E2EE: шифруйте на клиенте перед загрузкой для чувствительных данных.</div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+    <input type="file" id="vaultFile">
+    <button onclick="uploadToVault()" style="background:#7c3aed;">Загрузить</button>
+    <button onclick="refreshVaultList()" style="background:#3b82f6;">Обновить список</button>
+  </div>
+  <div style="margin:6px 0; display:flex; gap:4px; flex-wrap:wrap;">
+    <button onclick="filterVault('all')" style="padding:2px 8px; font-size:0.75rem; background:#444;">Все</button>
+    <button onclick="filterVault('note')" style="padding:2px 8px; font-size:0.75rem; background:#444;">Заметки</button>
+    <button onclick="filterVault('media')" style="padding:2px 8px; font-size:0.75rem; background:#444;">Медиа</button>
+    <button onclick="filterVault('audio')" style="padding:2px 8px; font-size:0.75rem; background:#444;">Аудио</button>
+    <button onclick="filterVault('file')" style="padding:2px 8px; font-size:0.75rem; background:#444;">Файлы</button>
+  </div>
+  <div style="margin:8px 0; font-size:0.85rem;">
+    <span id="vaultQuota">...</span>
+    <div style="background:#222; height:6px; border-radius:3px; margin-top:3px; overflow:hidden;">
+      <div id="vaultBar" style="background:#7c3aed; height:100%; width:0%; transition:width 0.3s;"></div>
+    </div>
+  </div>
+  <div id="vaultList" style="margin-top:8px; background:#0f0f12; padding:8px; border-radius:8px; min-height:80px; font-size:0.85rem; max-height:200px; overflow:auto;"></div>
+  <div style="margin-top:8px;">
+    <textarea id="noteContent" placeholder="Новая заметка..." style="width:100%; height:60px; background:#111; color:#ddd; border:1px solid #333; border-radius:6px; padding:6px;"></textarea>
+    <button onclick="saveNote()" style="background:#7c3aed; margin-top:4px;">Сохранить заметку</button>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🎙️ Голосовые записи → Vault</h2>
+  <button id="recBtn" onclick="toggleRecording()" style="background:#db2777;">Начать запись</button>
+  <span id="recStatus" style="margin-left:10px;"></span>
+  <div style="font-size:0.8rem; opacity:0.7; margin-top:4px;">Запись автоматически загрузится в Vault как аудиофайл.</div>
+</div>
+
+<div class="card">
+  <h2>📞 Голосовые и видео звонки (WebRTC) — реальная поддержка</h2>
+  <div style="font-size:0.8rem; margin-bottom:6px; background:#1a1a20; padding:6px; border-radius:6px;">
+    <strong>Для настоящих звонков между клиентами SimpleX:</strong><br>
+    1. В обоих клиентах добавьте этот SMP (из верхней секции) для новых контактов (или смените receiving address в карточке контакта).<br>
+    2. В каждом клиенте: Настройки → Аудио и видео звонки → WebRTC ICE серверы → включите настройку и вставьте строки из карточки 🧊 выше (tcp версия).<br>
+    3. Создайте контакт/чат используя адрес этого узла → звоните. Сигналинг идёт по SMP, медиа — через наш TURN (скрыт в onion).<br>
+    <span style="opacity:0.8;">Если звонок "проходит" но инициализация не доходит — чат использует не этот SMP для доставки сообщений.</span>
+  </div>
+
+  <div style="margin:8px 0;">
+    <input id="peer" value="room1" style="width:140px;padding:4px;background:#111;border:1px solid #333;color:#ddd;border-radius:4px;" placeholder="room name">
+    <button onclick="startCallDemo()" style="background:#0ea5e9;">Тест: 1 сторона (relay forced)</button>
+  </div>
+  <div id="callStatus" style="margin-top:4px;font-size:0.85rem;"></div>
+
+  <div style="margin-top:10px; border-top:1px solid #333; padding-top:8px; font-size:0.8rem;">
+    <strong>Тестер двух сторон (рекомендую):</strong> открой 2 вкладки браузера. Введи одинаковый room. Одна — "Caller", вторая — "Callee". Они автоматически обменяются SDP через этот сервер и используют наш TURN для аудио. Если слышишь друг друга — TURN работает отлично.
+    <div style="margin-top:4px;">
+      <button onclick="startCallerTest()" style="background:#22c55e; padding:4px 8px; font-size:0.75rem;">Я — Caller (вызывающий)</button>
+      <button onclick="startCalleeTest()" style="background:#eab308; padding:4px 8px; font-size:0.75rem;">Я — Callee (отвечающий)</button>
+      <button onclick="stopCallTest()" style="background:#ef4444; padding:4px 8px; font-size:0.75rem;">Стоп тест</button>
+    </div>
+    <div id="callTestLog" style="font-family:monospace; font-size:0.7rem; background:#0a0a0c; padding:4px; margin-top:4px; max-height:80px; overflow:auto; white-space:pre-wrap;"></div>
+  </div>
+
+  <div style="margin-top:8px; font-size:0.75rem; opacity:0.75;">
+    Manual fallback (для отладки): <button onclick="copyLocalSDP()" style="padding:1px 4px; font-size:0.7rem;">Copy local SDP</button>
+    <textarea id="sdpExchange" placeholder="manual offer/answer" style="width:100%; height:38px; font-size:0.65rem;"></textarea>
+    <button onclick="setRemoteSDP()" style="padding:1px 4px; font-size:0.7rem;">set remote</button>
+    <button onclick="createAnswerFromOffer()" style="padding:1px 4px; font-size:0.7rem;">make answer</button>
+  </div>
+</div>
+
+<div class="card" style="border: 2px solid #6366f1;">
+  <h2>📋 Log Viewer — Keep-Alive</h2>
+  <div style="font-size:0.75rem; margin-bottom:4px;">
+    <span style="opacity:0.7;">Live logs from dashboard.log (auto-refreshes every 2min). Keep-alive ping to prevent service idle timeout.</span>
+    <span id="keepalive-status" style="float:right; font-size:0.65rem; color:#22c55e;">✓ keepalive active</span>
+  </div>
+  <div id="log-viewer" style="margin-top:4px;">
+    <button onclick="refreshLogs()" style="background:#6366f1; padding:2px 8px; font-size:0.75rem;">📋 Refresh Logs</button>
+    <span style="font-size:0.65rem; opacity:0.6; margin-left:6px;">auto every 2min</span>
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="modal">
+  <div class="modal-content">
+    <h3 id="qrTitle"></h3>
+    <img id="qrImg" alt="QR">
+    <div id="qrFull" style="font-family:monospace;font-size:0.75rem;background:#0a0a0c;padding:8px;border-radius:6px;text-align:left;word-break:break-all;margin:10px 0;"></div>
+    <div class="row" style="justify-content:center;">
+      <button onclick="downloadQR()">Скачать PNG</button>
+      <button onclick="copyCurrent()" class="secondary">Копировать адрес</button>
+      <button onclick="closeQR()" class="secondary">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIMPLE LOCK OVERLAY (unlock only) -->
+<div id="lockOverlay" style="display:none; position:fixed; inset:0; background:#000; z-index:999999; align-items:center; justify-content:center; flex-direction:column; color:white;">
+  <div style="background:#16161b; padding:32px 28px; border-radius:16px; width:340px; max-width:94%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+    <h2 style="margin:0 0 20px; font-size:1.35rem;">🔒 Введите код доступа</h2>
+
+    <input id="lockCode" type="password" inputmode="numeric" maxlength="6" placeholder="6 цифр"
+           style="font-size:1.5rem; padding:12px; width:100%; text-align:center; border-radius:8px; border:1px solid #333; background:#0f0f12; color:white; letter-spacing:8px; font-weight:bold; margin-bottom:12px;">
+
+    <div id="lockError" style="color:#f66; min-height:22px; margin-bottom:8px; font-weight:600;"></div>
+
+    <button id="unlockBtn" style="width:100%; padding:12px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer;">
+      РАЗБЛОКИРОВАТЬ
+    </button>
+  </div>
+</div>
+
+<!-- SEPARATE CHANGE CODE MODAL -->
+<div id="changeCodeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:999999; align-items:center; justify-content:center;">
+  <div style="background:#16161b; padding:28px; border-radius:14px; width:360px; max-width:94%; box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+    <h3 style="margin:0 0 16px; text-align:center;">Сменить код доступа</h3>
+
+    <div style="font-size:0.85rem; opacity:0.75; margin-bottom:4px;">Текущий код (для проверки)</div>
+    <input id="currentForChange" type="password" inputmode="numeric" maxlength="6" placeholder="Текущий код"
+           style="font-size:1.3rem; padding:10px; width:100%; text-align:center; border-radius:8px; border:1px solid #333; background:#0f0f12; color:white; letter-spacing:6px; margin-bottom:12px;">
+
+    <div style="font-size:0.85rem; opacity:0.75; margin-bottom:4px;">Новый 6-значный код</div>
+    <input id="newLockCode" type="password" inputmode="numeric" maxlength="6" placeholder="Новый код"
+           style="font-size:1.3rem; padding:10px; width:100%; text-align:center; border-radius:8px; border:1px solid #333; background:#0f0f12; color:white; letter-spacing:6px; margin-bottom:18px;">
+
+    <div style="display:flex; gap:10px;">
+      <button id="saveCodeBtn" onclick="saveNewCode()" style="flex:1; padding:10px; background:#22c55e; color:white; border:none; border-radius:8px; font-weight:500;">Сохранить</button>
+      <button id="cancelCodeBtn" onclick="closeChangeCodeModal()" style="flex:1; padding:10px; background:#444; color:white; border:none; border-radius:8px;">Отмена</button>
+    </div>
+
+    <div id="changeCodeError" style="color:#f66; margin-top:10px; text-align:center; min-height:20px; font-weight:600;"></div>
+  </div>
+</div>
+
+<script>
+function truncate(a){if(!a||a.length<50)return a;const m=a.match(/^(smp:\/\/|xftp:\/\/)([^@]+)@([^:]+):(\d+)/);if(m){const p=m[1],f=m[2],o=m[3],pt=m[4];return p+(f.length>16?f.slice(0,10)+'...'+f.slice(-5):f)+'@'+(o.length>28?o.slice(0,14)+'...'+o.slice(-9):o)+':'+pt;}return a.slice(0,26)+'...'+a.slice(-20);}
+async function copyText(t){try{await navigator.clipboard.writeText(t);alert('Скопировано')}catch(e){prompt('Скопируйте:',t)}}
+let curQR='';
+function showQR(tit,full){
+  curQR=full;
+  document.getElementById('qrTitle').textContent=tit;
+  document.getElementById('qrFull').textContent=full;
+  const img=document.getElementById('qrImg');
+  const p=tit.includes('SMP')?'/static/qr-smp.png':'/static/qr-xftp.png';
+  img.src=p+'?t='+Date.now();
+  img.onerror=()=>{img.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%22220%22><rect fill=%22white%22 width=%22220%22 height=%22220%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 fill=%22black%22 font-size=%2212%22>QR не найден — запустите startup.sh</text></svg>';};
+  document.getElementById('qrModal').style.display='flex';
+}
+function closeQR(){document.getElementById('qrModal').style.display='none'}
+function downloadQR(){const a=document.createElement('a');a.href=document.getElementById('qrImg').src;a.download='simplex-qr.png';a.click()}
+function copyCurrent(){copyText(curQR)}
+
+// === Dashboard Onion (only shown when accessed via 127.0.0.1) ===
+let dashboardOnion = '';
+let iceServers = [];
+let iceTurnUrl = '';
+let iceOnion = '';
+
+async function loadDashboardOnion() {
+  const card = document.getElementById('dashboard-onion-card');
+  if (!card) return;
+
+  try {
+    const d = await safeFetch('/api/dashboard-onion', 5);  // use safe with retries for localhost/Firefox issues
+    if (!d.onion) {
+      card.style.display = 'none';
+      return;
+    }
+
+    dashboardOnion = d.onion;
+    const addrEl = document.getElementById('dashboard-onion-addr');
+    if (addrEl) {
+      // Simple truncation for long onion
+      const full = 'http://' + d.onion;
+      const short = full.length > 70 ? full.slice(0, 35) + '...' + full.slice(-30) : full;
+      addrEl.textContent = short;
+      addrEl.title = full; // full on hover
+    }
+    card.style.display = 'block';
+  } catch (e) {
+    if (card) card.style.display = 'none';
+  }
+}
+
+function copyDashboardOnion() {
+  if (!dashboardOnion) return;
+  const full = 'http://' + dashboardOnion;
+  copyText(full);
+}
+
+function showDashboardQR() {
+  if (!dashboardOnion) return;
+  const full = 'http://' + dashboardOnion;
+
+  // Reuse the existing QR modal
+  curQR = full;
+  document.getElementById('qrTitle').textContent = 'Dashboard Onion';
+  document.getElementById('qrFull').textContent = full;
+
+  const img = document.getElementById('qrImg');
+  img.src = '/static/qr-dashboard.png?t=' + Date.now();
+  img.onerror = () => {
+    img.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%22220%22><rect fill=%22white%22 width=%22220%22 height=%22220%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 fill=%22black%22 font-size=%2212%22>QR не найден — запустите startup.sh</text></svg>';
+  };
+
+  document.getElementById('qrModal').style.display = 'flex';
+}
+
+function copyIceOnion() {
+  if (!iceTurnUrl) return;
+  copyText(iceTurnUrl);
+}
+
+function showIceQR() {
+  if (!iceTurnUrl) return;
+  const full = iceTurnUrl;
+  curQR = full;
+  document.getElementById('qrTitle').textContent = 'ICE/TURN адрес (для копирования в клиент)';
+  document.getElementById('qrFull').textContent = full;
+
+  const img = document.getElementById('qrImg');
+  img.src = '/static/qr-ice.png?t=' + Date.now();
+  img.onerror = () => {
+    img.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%22220%22><rect fill=%22white%22 width=%22220%22 height=%22220%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 fill=%22black%22 font-size=%2212%22>QR не найден — запустите startup.sh</text></svg>';
+  };
+
+  document.getElementById('qrModal').style.display = 'flex';
+}
+
+// Auditor dashboard onion
+let auditorOnion = '';
+
+async function loadAuditorConfig() {
+  const card = document.getElementById('auditor-card');
+  const addrEl = document.getElementById('auditor-addr');
+  if (!card || !addrEl) return;
+  try {
+    const data = await safeFetch('/api/addresses', 3);
+    if (data && data.auditor) {
+      auditorOnion = data.auditor;
+      const fullUrl = 'http://' + auditorOnion + '/auditor';
+      const short = auditorOnion.length > 30 ? auditorOnion.slice(0,22) + '...' + auditorOnion.slice(-14) : auditorOnion;
+      addrEl.innerHTML = '<a href="' + fullUrl + '" target="_blank" style="color:#fbbf24;">' + short + '</a> /auditor';
+      addrEl.title = fullUrl;
+      card.style.display = 'block';
+    }
+  } catch(e) {
+    console.log('auditor config not available', e);
+  }
+}
+
+function copyAuditorOnion() {
+  if (!auditorOnion) return;
+  copyText('http://' + auditorOnion + '/auditor');
+}
+
+function showAuditorQR() {
+  if (!auditorOnion) return;
+  const full = 'http://' + auditorOnion + '/auditor';
+  curQR = full;
+  document.getElementById('qrTitle').textContent = 'Auditor Dashboard onion (только для топ-10 аудиторов)';
+  document.getElementById('qrFull').textContent = full;
+  const img = document.getElementById('qrImg');
+  img.src = '/static/qr-auditor.png?t=' + Date.now();
+  img.onerror = () => {
+    img.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22220%22 height=%22220%22><rect fill=%22white%22 width=%22220%22 height=%22220%22/><text x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 fill=%22black%22 font-size=%2212%22>QR не найден — запустите startup.sh</text></svg>';
+  };
+  document.getElementById('qrModal').style.display = 'flex';
+}
+
+// ==== Genesis Holy Grail ====
+
+async function loadGenesisGrail() {
+  const card = document.getElementById('genesis-grail-card');
+  if (!card) return;
+  try {
+    const state = await safeFetch('/api/economy/state', 3);
+    const genesisData = await safeFetch('/api/genesis/info', 3);
+    if (!genesisData || !genesisData.has_genesis) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    const listEl = document.getElementById('genesis-cards-list');
+    if (genesisData.cards && listEl) {
+      let html = '<b style="color:#ffd700;">🏆 9 Добродетелей Genesis (×5):</b><br>';
+      for (const c of genesisData.cards) {
+        const locked = c.status === 'genesis_locked';
+        const name = c.name || '';
+        html += `<div style="margin:3px 0; ${locked ? 'opacity:0.75;' : ''}">
+          <span style="color:#ffd700;">⚜️</span> ${name ? '<b>'+name+'</b> ' : ''}${c.serial} — ${(c.denomination_tlr).toFixed(2)} TLR
+          ${locked ? '<span style="color:#ff6b35;">🔒 LOCKED</span>' : '<span style="color:#22c55e;">✅ UNLOCKED</span>'}
+        </div>`;
+      }
+      listEl.innerHTML = html;
+    }
+    const annEl = document.getElementById('genesis-announcement-text');
+    if (genesisData.announcement && annEl) {
+      annEl.textContent = genesisData.announcement;
+    }
+  } catch(e) {
+    console.log('genesis grail not available', e);
+  }
+}
+
+// ==== A2 Economy UI functions ====
+
+async function buyPack() {
+  const pubkey = document.getElementById('pack-pubkey').value.trim();
+  if (!pubkey) { alert('введи pubkey'); return; }
+  const res = await safeFetch('/api/pack/buy?pubkey=' + encodeURIComponent(pubkey), 2, 'POST');
+  document.getElementById('pack-result').innerHTML = res ? '<pre style="margin:0;font-size:0.75rem;">'+JSON.stringify(res,null,2)+'</pre>' : 'ошибка';
+  document.getElementById('pack-open-area').style.display = 'block';
+}
+
+async function listPacks() {
+  const pubkey = document.getElementById('pack-pubkey').value.trim();
+  if (!pubkey) { alert('введи pubkey'); return; }
+  const res = await safeFetch('/api/pack/list?pubkey=' + encodeURIComponent(pubkey), 2);
+  let html = '';
+  if (res && res.packs) {
+    for (const p of res.packs) {
+      html += `<div style="margin:4px 0;">${p.pack_id} — ${p.sealed ? '🔒 sealed' : '📂 opened'} — ${p.banknotes.length} карт — ${(p.price_ng/1e9).toFixed(2)}g</div>`;
+    }
+  }
+  document.getElementById('pack-list-result').innerHTML = html || 'нет паков';
+}
+
+async function openPack() {
+  const pubkey = document.getElementById('pack-pubkey').value.trim();
+  const packID = document.getElementById('pack-open-id').value.trim();
+  if (!pubkey || !packID) { alert('введи pubkey и pack_id'); return; }
+  const res = await safeFetch('/api/pack/open?pubkey=' + encodeURIComponent(pubkey) + '&pack_id=' + encodeURIComponent(packID), 2, 'POST');
+  if (res && res.cards) {
+    let html = `<b>📂 Открыт!</b><br>`;
+    for (const c of res.cards) {
+      html += `<div style="margin:2px 0;">${c.serial} — ${c.rarity} — ${(c.denomination_ng/1e9).toFixed(2)}g</div>`;
+    }
+    document.getElementById('pack-result').innerHTML = html;
+    listPacks();
+  } else {
+    document.getElementById('pack-result').innerHTML = 'ошибка: ' + JSON.stringify(res);
+  }
+}
+
+async function buybackQuote() {
+  const serial = document.getElementById('buyback-serial').value.trim();
+  if (!serial) { alert('введи serial'); return; }
+  const res = await safeFetch('/api/buyback/quote?serial=' + encodeURIComponent(serial), 2);
+  document.getElementById('buyback-result').innerHTML = res ? '<pre style="margin:0;font-size:0.75rem;">'+JSON.stringify(res,null,2)+'</pre>' : 'не найдена';
+}
+
+async function buybackSell() {
+  const pubkey = document.getElementById('buyback-pubkey').value.trim();
+  const serial = document.getElementById('buyback-serial').value.trim();
+  if (!pubkey || !serial) { alert('введи pubkey и serial'); return; }
+  if (!confirm('Продать казне ' + serial + '?')) return;
+  const res = await safeFetch('/api/buyback/sell?pubkey=' + encodeURIComponent(pubkey) + '&serial=' + encodeURIComponent(serial), 2, 'POST');
+  document.getElementById('buyback-result').innerHTML = res ? '<pre style="margin:0;font-size:0.75rem;">'+JSON.stringify(res,null,2)+'</pre>' : 'ошибка';
+}
+
+async function auctionList() {
+  const pubkey = document.getElementById('auc-pubkey').value.trim();
+  const serial = document.getElementById('auc-serial').value.trim();
+  const start = document.getElementById('auc-start').value.trim();
+  if (!pubkey || !serial || !start) { alert('заполни все поля'); return; }
+  const res = await safeFetch('/api/auction/list?pubkey=' + encodeURIComponent(pubkey) + '&serial=' + encodeURIComponent(serial) + '&start_price=' + encodeURIComponent(start), 2, 'POST');
+  document.getElementById('auc-result').innerHTML = res ? '<pre style="margin:0;font-size:0.75rem;">'+JSON.stringify(res,null,2)+'</pre>' : 'ошибка';
+}
+
+async function auctionRefresh() {
+  const res = await safeFetch('/api/auction/active', 2);
+  let html = '';
+  if (res && res.auctions) {
+    for (const a of res.auctions) {
+      html += `<div style="margin:3px 0;">🔨 ${a.serial} (${a.rarity}) — старт ${(a.start_price_ng/1e9).toFixed(2)}g / текущая ${(a.current_bid_ng/1e9).toFixed(2)}g — до ${a.ends_at}</div>`;
+    }
+  }
+  document.getElementById('auc-active-result').innerHTML = html || 'нет активных аукционов';
+}
+
+async function auctionMy() {
+  const pubkey = document.getElementById('auc-pubkey').value.trim();
+  if (!pubkey) { alert('введи pubkey'); return; }
+  const res = await safeFetch('/api/auction/my?pubkey=' + encodeURIComponent(pubkey), 2);
+  let html = '';
+  if (res && res.items) {
+    for (const a of res.items) {
+      html += `<div style="margin:3px 0;">${a.listing_id} — ${a.serial} — ${(a.start_price_ng/1e9).toFixed(2)}g ${a.closed ? '✅ closed' : '⏳ active'}</div>`;
+    }
+  }
+  document.getElementById('auc-result').innerHTML = html || 'нет твоих лотов';
+}
+
+// === Island Services (SimpleX contact for the whole Treasure) ===
+let islandContact = '';
+
+async function refreshIslandContact() {
+  try {
+    const data = await safeFetch('/api/addresses', 4);
+    const el = document.getElementById('island-contact-addr');
+    if (!el) return;
+    islandContact = (data && data.contact) ? data.contact : '';
+    if (islandContact) {
+      const short = islandContact.length > 90 ? islandContact.slice(0, 42) + '…' + islandContact.slice(-40) : islandContact;
+      el.textContent = short;
+      el.title = 'Полный контакт для добавления в SimpleX (COPY кнопка даёт весь)';
+    } else {
+      el.textContent = 'Контакт Королевских Сервисов ещё не опубликован (запустите launch-node / startup — bridge сгенерирует).';
+    }
+  } catch (e) {
+    console.warn('island contact load failed', e);
+  }
+}
+
+function copyIslandContact() {
+  if (!islandContact) { alert('Контакт ещё не готов — запусти launch-node.sh и подожди bridge'); return; }
+  copyText(islandContact);
+}
+
+function showIslandQR() {
+  if (!islandContact) { alert('Сначала обнови контакт (кнопка Обновить)'); return; }
+  curQR = islandContact;
+  document.getElementById('qrTitle').textContent = 'Контакт Сервисов Острова (добавь в SimpleX Chat)';
+  document.getElementById('qrFull').textContent = islandContact;
+
+  const img = document.getElementById('qrImg');
+  // Prefer static QR if present (regenerated by startup/bridge), else data url fallback
+  img.src = '/static/qr-island-services.png?t=' + Date.now();
+  img.onerror = () => {
+    // simple fallback: try to generate tiny via canvas (no lib)
+    const c = document.createElement('canvas'); c.width=220; c.height=220; const ctx=c.getContext('2d');
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,220,220); ctx.fillStyle='#000'; ctx.font='10px monospace';
+    ctx.fillText('QR: добавь контакт', 20, 110); ctx.fillText('из дашборда / client-info', 20, 125);
+    img.src = c.toDataURL();
+  };
+  document.getElementById('qrModal').style.display = 'flex';
+}
+
+// Load ICE/TURN config from our onion-hidden server (for voice calls)
+async function loadIceConfig() {
+  const card = document.getElementById('ice-card');
+  const addrEl = document.getElementById('ice-addr');
+  const pasteSection = document.getElementById('ice-paste-section');
+  const pasteLinesEl = document.getElementById('ice-paste-lines');
+  if (!card || !addrEl) return;
+  try {
+    const data = await safeFetch('/api/ice-config', 5);  // safeFetch with retries to survive Firefox localhost fetch aborts
+    if (data.iceServers && data.iceServers.length > 0) {
+      iceServers = data.iceServers;
+      console.log('Loaded ICE config with onion TURN:', iceServers);
+
+      // Extract a displayable turn URL (prefer TLS)
+      const first = data.iceServers[0];
+      let displayUrl = '';
+      if (first && first.urls && first.urls.length > 0) {
+        displayUrl = Array.isArray(first.urls) ? first.urls[0] : first.urls;
+        iceTurnUrl = displayUrl;  // for copy turn URL
+      }
+
+      // extract pure onion for QR code of the onion address
+      if (displayUrl) {
+        const m = displayUrl.match(/turn[s]?:([^:]+):/i);
+        if (m) iceOnion = m[1];
+      }
+
+      if (displayUrl) {
+        const short = displayUrl.length > 70 ? displayUrl.slice(0,35) + '...' + displayUrl.slice(-30) : displayUrl;
+        addrEl.textContent = short;
+        addrEl.title = displayUrl;
+      } else {
+        addrEl.textContent = 'TURN адрес не получен (пустой ответ)';
+      }
+
+      // NEW: show pasteable lines for real SimpleX clients
+      if (data.pasteLines && data.pasteLines.length > 0 && pasteSection && pasteLinesEl) {
+        window.currentPasteLines = data.pasteLines;
+        pasteLinesEl.innerHTML = data.pasteLines.map((l, i) => `<div style="margin:2px 0;">${l}</div>`).join('');
+        pasteSection.style.display = 'block';
+      }
+    } else {
+      addrEl.textContent = 'TURN адрес не доступен (нет ice_onion.txt или сервис не запущен)';
+      if (pasteSection) pasteSection.style.display = 'none';
+    }
+  } catch (e) {
+    console.warn('Could not load ICE config, using default');
+    iceServers = [];
+    addrEl.textContent = 'Ошибка загрузки TURN адреса (проверьте консоль и перезапустите бинарь)';
+    if (pasteSection) pasteSection.style.display = 'none';
+  }
+}
+
+function refreshIceCreds() {
+  const addrEl = document.getElementById('ice-addr');
+  if (addrEl) addrEl.textContent = 'Обновляю креды...';
+  loadIceConfig().then(() => {
+    const status = document.getElementById('callStatus');
+    if (status) status.innerHTML = 'Креды обновлены (действуют ~1 час). Скопируйте новые строки в клиент.';
+  });
+}
+
+function copyPasteLine(idx) {
+  if (!window.currentPasteLines || !window.currentPasteLines[idx]) {
+    alert('Сначала загрузите ICE config');
+    return;
+  }
+  copyText(window.currentPasteLines[idx]);
+}
+
+function statusBadge(s) {
+  const st = (s || '').toLowerCase();
+  let color = '#f90';
+  if (st.includes('running') || st.includes('healthy')) color = '#22c55e';
+  if (st.includes('exited') || st.includes('error') || st.includes('not found')) color = '#f66';
+  if (st.includes('restarting')) color = '#f59e0b';
+  return `<span style="color:${color}">${s || 'unknown'}</span>`;
+}
+
+// Robust POST with timeout + XHR fallback (Firefox localhost is extremely flaky with fetch on auth calls)
+async function postJSON(url, obj, timeoutMs = 12000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(obj),
+      signal: ctrl.signal,
+      cache: 'no-store'
+    });
+    clearTimeout(t);
+    return res;
+  } catch (e) {
+    clearTimeout(t);
+    // Fallback to XHR — this path has been more reliable for the user on localhost
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.setRequestHeader('Cache-Control', 'no-cache');
+
+      const xt = setTimeout(() => {
+        xhr.abort();
+        reject(new Error('timeout'));
+      }, timeoutMs);
+
+      xhr.onload = () => {
+        clearTimeout(xt);
+        // Emulate fetch Response enough for our .ok check
+        resolve({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status });
+      };
+      xhr.onerror = () => {
+        clearTimeout(xt);
+        reject(new Error('xhr error'));
+      };
+      xhr.onabort = () => {
+        clearTimeout(xt);
+        reject(new Error('xhr abort'));
+      };
+      xhr.send(JSON.stringify(obj));
+    });
+  }
+}
+
+async function renderAddresses(){
+  const c = document.getElementById('addresses');
+  c.innerHTML = '<div style="opacity:0.7">Загрузка адресов...</div>';
+
+  // First, try a few quick attempts (this used to work well before we made everything too patient)
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      const d = await safeFetch('/api/addresses');
+      c.innerHTML = '';
+      if (d.smp) {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <div style="font-weight:600;margin-bottom:3px">SMP (сообщения)</div>
+          <div class="addr">${truncate(d.smp)}</div>
+          <div class="row">
+            <button onclick="copyText('${d.smp.replace(/'/g,"\\'")}')">COPY</button>
+            <button onclick="showQR('SMP Server','${d.smp.replace(/'/g,"\\'")}')">ПОКАЗАТЬ QR КОД</button>
+          </div>`;
+        c.appendChild(div);
+      }
+      if (d.xftp) {
+        const div = document.createElement('div');
+        div.style.marginTop = '14px';
+        div.innerHTML = `
+          <div style="font-weight:600;margin-bottom:3px">XFTP (файлы и медиа)</div>
+          <div class="addr">${truncate(d.xftp)}</div>
+          <div class="row">
+            <button onclick="copyText('${d.xftp.replace(/'/g,"\\'")}')">COPY</button>
+            <button onclick="showQR('XFTP Server','${d.xftp.replace(/'/g,"\\'")}')">ПОКАЗАТЬ QR КОД</button>
+          </div>`;
+        c.appendChild(div);
+      }
+      if (!d.smp && !d.xftp) {
+        c.innerHTML = '<div style="opacity:.6">Запустите ./startup.sh</div>';
+      }
+      return; // success
+    } catch (e) {
+      console.warn(`renderAddresses attempt ${attempt} failed`);
+      c.innerHTML = `<div style="opacity:0.7">Загрузка адресов... (попытка ${attempt})</div>`;
+      if (attempt < 5) {
+        await new Promise(r => setTimeout(r, 280 * attempt)); // short backoff
+      }
+    }
+  }
+
+  // If we still haven't succeeded after quick attempts, fall back to slow background retry
+  // (this helps in the worst Firefox localhost cases without spamming console forever)
+  c.innerHTML = '<div style="opacity:0.7">Загрузка адресов... (подождите несколько секунд)</div>';
+
+  let slowAttempt = 6;
+  while (true) {
+    try {
+      const d = await safeFetch('/api/addresses');
+      c.innerHTML = '';
+      if (d.smp) {
+        const div = document.createElement('div');
+        div.innerHTML = `
+          <div style="font-weight:600;margin-bottom:3px">SMP (сообщения)</div>
+          <div class="addr">${truncate(d.smp)}</div>
+          <div class="row">
+            <button onclick="copyText('${d.smp.replace(/'/g,"\\'")}')">COPY</button>
+            <button onclick="showQR('SMP Server','${d.smp.replace(/'/g,"\\'")}')">ПОКАЗАТЬ QR КОД</button>
+          </div>`;
+        c.appendChild(div);
+      }
+      if (d.xftp) {
+        const div = document.createElement('div');
+        div.style.marginTop = '14px';
+        div.innerHTML = `
+          <div style="font-weight:600;margin-bottom:3px">XFTP (файлы и медиа)</div>
+          <div class="addr">${truncate(d.xftp)}</div>
+          <div class="row">
+            <button onclick="copyText('${d.xftp.replace(/'/g,"\\'")}')">COPY</button>
+            <button onclick="showQR('XFTP Server','${d.xftp.replace(/'/g,"\\'")}')">ПОКАЗАТЬ QR КОД</button>
+          </div>`;
+        c.appendChild(div);
+      }
+      return;
+    } catch (e) {
+      console.warn(`renderAddresses background attempt ${slowAttempt} still failing...`);
+      c.innerHTML = `<div style="opacity:0.7">Загрузка адресов... (попытка ${slowAttempt})</div>`;
+      slowAttempt++;
+      await new Promise(r => setTimeout(r, 2500));
+    }
+  }
+}
+function formatUptime(startedAt) {
+  if (!startedAt) return '';
+  const start = new Date(startedAt);
+  const now = new Date();
+  if (isNaN(start.getTime())) return '';
+
+  let diff = Math.floor((now - start) / 1000); // seconds
+  if (diff < 0) diff = 0;
+
+  const days = Math.floor(diff / 86400);
+  diff %= 86400;
+  const hours = Math.floor(diff / 3600);
+  diff %= 3600;
+  const minutes = Math.floor(diff / 60);
+
+  const parts = [];
+  if (days > 0) parts.push(days + 'д');
+  if (hours > 0) parts.push(hours + 'ч');
+  parts.push(minutes + 'м');
+
+  return parts.join(' ');
+}
+
+// Safe fetch with retry - much more tolerant for Firefox localhost issues
+async function safeFetch(url, retries = 3) {
+  let lastErr;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      lastErr = err;
+      // Only log the first error to avoid console spam
+      if (i === 0) {
+        console.warn('Fetch attempt failed for', url, '- will retry');
+      }
+      if (i < retries) {
+        await new Promise(r => setTimeout(r, 180 * (i + 1))); // increasing delay
+      }
+    }
+  }
+  throw lastErr;
+}
+
+let statusLoadedSuccessfully = false;
+let richPoller = null;  // persistent poller for rich cards so open tabs notice service restarts
+
+async function refreshLogs() {
+  const logEl = document.getElementById('log-viewer');
+  if (!logEl) return;
+  try {
+    const resp = await safeFetch('/api/admin/logs?file=dashboard.log&lines=30');
+    if (resp && resp.ok && resp.content) {
+      logEl.innerHTML = '<pre style="font-size:0.65rem;max-height:200px;overflow:auto;background:#0a0a0c;padding:6px;border-radius:4px;">' + resp.content.replace(/</g,'&lt;') + '</pre>';
+    }
+  } catch(e) {}
+}
+
+async function keepAlive() {
+  try { await safeFetch('/api/admin/ping'); } catch(e) {}
+}
+
+async function refreshStatus() {
+  const statusEl = document.getElementById('status');
+  const metaEl = document.getElementById('node-meta');
+  const smpEl = document.getElementById('smp-info');
+  const xftpEl = document.getElementById('xftp-info');
+  const storageEl = document.getElementById('storage-info');
+  const healthEl = document.getElementById('health-checks');
+  const usbEl = document.getElementById('usb-status');
+  const buildBadge = document.getElementById('buildVersionBadge');
+  const buildDisp = document.getElementById('buildVersionDisplay');
+
+  try {
+    const [ver, d, diskCheck] = await Promise.all([
+      safeFetch('/api/version').catch(() => ({})),
+      safeFetch('/api/status'),
+      safeFetch('/api/disk-check').catch(() => ({})),
+    ]);
+    console.log('API /version:', ver, '/status:', d, '/diskCheck:', diskCheck);
+
+    // Update build version
+    const build = ver.build || d.version || 'b30';
+    if (buildBadge) buildBadge.textContent = build;
+    if (buildDisp) buildDisp.textContent = '(' + build + ')';
+
+    const uptime = formatUptime(d.started_at);
+    if (statusEl) {
+      statusEl.innerHTML = 'Узел работает • uptime: ' + (uptime || '—') + ' • <strong>' + build + '</strong>';
+    }
+
+    if (metaEl && d.started_at) {
+      metaEl.innerHTML = 'Запущен: ' + new Date(d.started_at).toLocaleString('ru-RU') + ' • go ' + (ver.go || '—');
+    }
+
+    // Health summary from status
+    if (healthEl) {
+      const smp = d.smp || {};
+      const xftp = d.xftp || {};
+      const bridge = d.bridge || {};
+      const memory = d.memory || {};
+      const load = d.load || {};
+      const memUsed = memory.used_mb || 0;
+      const memTotal = memory.total_mb || 0;
+      const memPct = memTotal > 0 ? (memUsed / memTotal * 100).toFixed(0) : '?';
+      let html = '<div style="border-top:1px solid #222; padding-top:6px; margin-top:6px;"><strong>Health:</strong></div>';
+      const checks = [
+        {name:'SMP', ok: String(smp.status).includes('healthy') || String(smp.status).includes('Up')},
+        {name:'XFTP', ok: String(xftp.status).includes('healthy') || String(xftp.status).includes('Up')},
+        {name:'Bridge', ok: bridge.connected || false},
+        {name:'Memory', ok: parseInt(memPct) < 90, detail: memUsed + '/' + memTotal + ' MB (' + memPct + '%)'},
+      ];
+      if (load.load5) {
+        checks.push({name:'Load', ok: parseFloat(load.load5) < 8, detail: '5m: ' + load.load5});
+      }
+      let allOk = true;
+      for (const chk of checks) {
+        if (!chk.ok) allOk = false;
+        html += '<div style="margin-top:2px; display:flex; align-items:center; gap:4px;">' +
+          (chk.ok ? '<span style="color:#22c55e">✓</span>' : '<span style="color:#ef4444">✗</span>') +
+          ' <span style="opacity:0.8">' + chk.name + '</span>' +
+          (chk.detail ? ' <span style="margin-left:auto; opacity:0.5; font-size:0.7rem;">' + chk.detail + '</span>' : '') +
+          '</div>';
+      }
+      html += '<div style="margin-top:4px; font-weight:600; color:' + (allOk ? '#22c55e' : '#ef4444') + ';">' +
+        (allOk ? '✅ All checks passed' : '❌ Some issues') + '</div>';
+      healthEl.innerHTML = html;
+    }
+
+    // USB backup status
+    if (usbEl) {
+      const usbInfo = diskCheck.usb;
+      if (usbInfo) {
+        usbEl.innerHTML = '💾 USB: <span style="color:#22c55e">mounted</span> • ' +
+          (usbInfo.avail_gb || '?') + ' GB free';
+      } else {
+        usbEl.innerHTML = '💾 USB: <span style="color:#f59e0b">not detected</span>';
+      }
+    }
+
+    // Always populate the rich cards on successful response.
+    // The old "hint guard" was causing the exact symptom you described:
+    // data only appears reliably after Go process restart + clean page load.
+    const smp = d.smp || {};
+    if (smpEl) {
+      smpEl.innerHTML = `
+        <div><strong>Fingerprint:</strong> <code style="font-size:0.8em">${smp.fingerprint || '—'}</code></div>
+        <div style="margin-top:4px"><strong>Статус:</strong> ${statusBadge(smp.status)}</div>
+      `;
+    }
+
+    const xftp = d.xftp || {};
+    if (xftpEl) {
+      xftpEl.innerHTML = `
+        <div><strong>Fingerprint:</strong> <code style="font-size:0.8em">${xftp.fingerprint || '—'}</code></div>
+        <div style="margin-top:4px"><strong>Статус:</strong> ${statusBadge(xftp.status)}</div>
+      `;
+    }
+
+    const storage = d.storage || {};
+    const vault = d.vault || {};
+    const disk = d.disk || {};
+    if (storageEl) {
+      const rootPct = disk.root_used_pct || 0;
+      const rootColor = rootPct > 90 ? '#ef4444' : (rootPct > 80 ? '#f59e0b' : '#22c55e');
+      const backupsMB = (disk.backups_total_mb || 0).toFixed(0);
+      const bCount = disk.backups_count || 0;
+      const rootAvail = disk.root_avail_mb || 0;
+      const vaultUser = (disk.vault_user_mb || vault.used_mb || 0);
+      let alertHtml = '';
+      if (disk.last_alert || (rootPct > 85 || vaultUser > 1900)) {
+        alertHtml = `<div style="color:#f66; font-size:0.7rem; margin-top:4px;">⚠️ ${disk.last_alert || 'Проверь диск (много бэкапов / мало места)'}</div>`;
+      }
+      storageEl.innerHTML = `
+        <div style="margin-bottom:4px; color:${rootColor}; font-weight:600;">Root: <strong>${rootPct}%</strong> used (${(rootAvail/1024).toFixed(1)} GB avail)</div>
+        <div>SMP state: <strong>${(storage.smp_state || 0).toFixed(1)} MB</strong></div>
+        <div>XFTP state: <strong>${(storage.xftp_state || 0).toFixed(1)} MB</strong></div>
+        <div style="margin-top:4px; border-top:1px solid #222; padding-top:4px;">
+          Vault: <strong>${(disk.vault_user_mb || vaultUser || 0).toFixed(1)} MB</strong> user data 
+          + <strong>${(disk.vault_reservation_mb || 2048)}</strong> MB reservation container (.reserved)
+          / 2048 MB quota (${vault.file_count || 0} файлов, ${(disk.vault_user_pct_of_quota || 0).toFixed(1)}% user)
+          <span style="opacity:0.6">— reservation is intentional (future: dedicated RAID tens of TB)</span>
+        </div>
+        <div style="margin-top:2px; font-size:0.75rem; opacity:0.8;">Backups: <strong>${backupsMB} MB</strong> (${bCount} checkpoints) — главная причина прошлых переполнений</div>
+        ${alertHtml}
+        <button onclick="checkDiskNow()" style="margin-top:6px; background:#ef4444; padding:2px 8px; font-size:0.7rem;">Проверить диск + алерт</button>
+      `;
+    }
+
+    // Container status badge
+    try {
+      const cs = await safeFetch('/api/container/status');
+      const badge = document.getElementById('containerBadge');
+      if (cs && badge) {
+        if (cs.opened) {
+          badge.style.background = '#1a3a1a';
+          badge.style.color = '#22c55e';
+          badge.textContent = '📦 OPEN (' + (cs.entries || []).length + ' entries)';
+        } else if (cs.exists) {
+          badge.style.background = '#3a3a1a';
+          badge.style.color = '#eab308';
+          badge.textContent = '📦 LOCKED (seed required)';
+        } else {
+          badge.style.background = '#333';
+          badge.style.color = '#999';
+          badge.textContent = '📦 NO CONTAINER';
+        }
+      }
+    } catch (_) {}
+
+    statusLoadedSuccessfully = true;
+
+  } catch (e) {
+    console.error('refreshStatus error:', e);
+
+    // On first load, be very gentle with the user
+    if (!statusLoadedSuccessfully) {
+      if (statusEl) {
+        statusEl.innerHTML = 'Узел работает • <span style="color:#f90">пробую подключиться...</span>';
+      }
+      // Do NOT touch the three rich cards here.
+      // The background loader (startRichStatusBackgroundLoading) owns the "Попытка X..." text
+      // and will keep it visible and advancing. The error handler was clobbering it before.
+    } else {
+      if (statusEl) {
+        statusEl.innerHTML = 'Узел работает • <span style="color:#f66">проблемы со связью (см. консоль)</span>';
+      }
+    }
+  }
+}
+
+// Persistent rich data loader.
+// The key insight from your symptom: in an already-open tab, when you restart
+// smp/xftp services, the existing retry loop eventually succeeds and shows data.
+// But a fresh page refresh starts a new load that gets stuck.
+//
+// Solution: after unlock we start a background poller that keeps running
+// for a long time (even after first success). This makes both fresh loads
+// and long-lived tabs eventually get (and keep) correct data when services are up.
+function startRichStatusBackgroundLoading() {
+  const smpEl = document.getElementById('smp-info');
+  const xftpEl = document.getElementById('xftp-info');
+  const storageEl = document.getElementById('storage-info');
+
+  // Stop any previous poller
+  if (richPoller) {
+    clearInterval(richPoller);
+    richPoller = null;
+  }
+
+  // Quick aggressive phase (first 5 attempts, short delays)
+  (async () => {
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      if (smpEl)   smpEl.innerHTML   = `<div style="color:#f90">Попытка ${attempt}/5...</div>`;
+      if (xftpEl)  xftpEl.innerHTML  = `<div style="color:#f90">Попытка ${attempt}/5...</div>`;
+      if (storageEl) storageEl.innerHTML = `<div style="color:#f90">Попытка ${attempt}/5...</div>`;
+
+      try {
+        await refreshStatus();
+      } catch (e) {}
+
+      if (attempt < 5) await new Promise(r => setTimeout(r, 350 * attempt));
+    }
+
+    // Persistent slow poller — this is the important part.
+    // We do NOT stop it after first success.
+    // This ensures:
+    //   - Fresh page loads keep trying until they get real data
+    //   - Open tabs notice when you stop/start services
+    let slowAttempt = 6;
+    // Auto-refresh every 2 minutes (keeps service state current)
+    richPoller = setInterval(async () => {
+      // Only show "Попытка" text if we still don't have good data
+      const stillLoading = !statusLoadedSuccessfully ||
+        (smpEl && smpEl.innerHTML.includes('Загрузка')) ||
+        (smpEl && smpEl.innerHTML.includes('Попытка'));
+
+      if (stillLoading) {
+        if (smpEl)   smpEl.innerHTML   = `<div style="color:#f90">Попытка ${slowAttempt}...</div>`;
+        if (xftpEl)  xftpEl.innerHTML  = `<div style="color:#f90">Попытка ${slowAttempt}...</div>`;
+        if (storageEl) storageEl.innerHTML = `<div style="color:#f90">Попытка ${slowAttempt}...</div>`;
+      }
+
+      try {
+        await refreshStatus();
+        keepAlive();
+      } catch (e) {}
+
+      slowAttempt++;
+    }, 120000);
+  })();
+}
+function refreshAll(){
+  const statusEl = document.getElementById('status');
+  if (statusEl) statusEl.innerHTML = 'Узел работает • <span style="color:#f90">обновляю всё...</span>';
+  renderAddresses();
+  refreshStatus();
+  refreshHeroContact();
+  loadDashboardOnion();
+  loadIceConfig();
+  loadAuditorConfig();
+  loadGenesisGrail();
+  refreshVaultList();
+  loadRadio();
+  if (typeof refreshTreasuryState === 'function') setTimeout(refreshTreasuryState, 300);
+  if (typeof loadChannels === 'function') setTimeout(loadChannels, 500);
+}
+
+// Lightweight version that only updates the top "Статус узла" + meta, without touching rich cards state
+async function refreshTopStatusOnly() {
+  const statusEl = document.getElementById('status');
+  const metaEl = document.getElementById('node-meta');
+  try {
+    const d = await safeFetch('/api/status', 1);
+    const uptime = formatUptime(d.started_at);
+    if (statusEl) statusEl.innerHTML = 'Узел работает • uptime: ' + (uptime || '—');
+    if (metaEl && d.started_at) {
+      metaEl.innerHTML = 'Запущен: ' + new Date(d.started_at).toLocaleString('ru-RU');
+    }
+  } catch (e) {}
+}
+
+let richStatusAttempt = 0;
+
+function forceRefreshRichStatus() {
+  const statusEl = document.getElementById('status');
+  const smpEl = document.getElementById('smp-info');
+  const xftpEl = document.getElementById('xftp-info');
+  const storageEl = document.getElementById('storage-info');
+
+  if (statusEl) statusEl.innerHTML = 'Узел работает • <span style="color:#f90">обновляю данные узла...</span>';
+  if (smpEl)   smpEl.innerHTML   = '<div style="color:#f90">Обновляю...</div>';
+  if (xftpEl)  xftpEl.innerHTML  = '<div style="color:#f90">Обновляю...</div>';
+  if (storageEl) storageEl.innerHTML = '<div style="color:#f90">Обновляю...</div>';
+
+  refreshStatus();
+  startRichStatusBackgroundLoading();
+}
+
+async function checkDiskNow() {
+  const storageEl = document.getElementById('storage-info');
+  if (storageEl) storageEl.innerHTML = '<div style="color:#f90">Проверяю диск + алерты...</div>';
+  try {
+    const res = await safeFetch('/api/disk-check');
+    await refreshStatus(); // will re-render the enhanced storage with fresh disk + any new alert banner
+    const alerts = (res && res.alerts && res.alerts.length) ? res.alerts.join(' | ') : 'проверка завершена без новых алертов';
+    alert('Disk check результат:\n' + alerts + '\n\n(алерт отправлен в TG админу если пороги превышены; см. карточку Хранилище и alerts.log)');
+  } catch (e) {
+    if (storageEl) storageEl.innerHTML = '<div style="color:#f66">Ошибка /api/disk-check</div>';
+  }
+}
+
+async function rotateAddresses(){
+  if(!confirm('СГЕНЕРИРОВАТЬ НОВЫЕ АДРЕСА?\n\nТекущие SMP и XFTP .onion будут уничтожены и созданы новые.'))return;
+  document.querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{
+    const j=await (await fetch('/api/rotate',{method:'POST'})).json();
+    alert('Ротация запущена. Новые адреса через ~50 секунд.');
+    setTimeout(()=>location.reload(),52000);
+  }catch(e){alert('Ошибка: '+e);document.querySelectorAll('button').forEach(b=>b.disabled=false)}
+}
+
+async function restartNode() {
+  if (!confirm('ПЕРЕЗАГРУЗИТЬ НОДУ?\n\nСервер ParanoidX будет перезапущен. Дашборд перезагрузится через несколько секунд.')) return;
+  const btn = event.target;
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Перезагружаю...';
+  try {
+    await fetch('/api/restart', { method: 'POST' });
+    btn.textContent = '✅ Перезагрузка... жду 5с';
+    setTimeout(() => { location.reload(); }, 5000);
+  } catch(e) {
+    alert('Ошибка запроса на перезагрузку: ' + e);
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
+
+// ===== CLEAN LOCK SYSTEM (rebuilt from scratch) =====
+
+function showLockOverlay() {
+  const ov = document.getElementById('lockOverlay');
+  const codeInput = document.getElementById('lockCode');
+  const err = document.getElementById('lockError');
+  const btn = document.getElementById('unlockBtn');
+
+  if (err) err.textContent = '';
+  if (codeInput) {
+    codeInput.value = '';
+    // clear previous error on typing
+    codeInput.oninput = () => { if (err) err.textContent = ''; };
+    codeInput.onkeydown = (e) => { if (e.key === 'Enter') attemptUnlock(); };
+  }
+  if (btn) {
+    btn.onclick = attemptUnlock;
+  }
+  // hide change-code button while locked (it is a separate post-unlock action)
+  const chBtn = document.getElementById('changeCodeBtn');
+  if (chBtn) chBtn.style.display = 'none';
+
+  ov.style.display = 'flex';
+
+  setTimeout(() => {
+    if (codeInput) { codeInput.focus(); codeInput.select(); }
+  }, 80);
+}
+
+async function initLockOnLoad() {
+  const chBtn = document.getElementById('changeCodeBtn');
+  try {
+    const d = await safeFetch('/api/lock-status');
+    if (d.is_locked) {
+      showLockOverlay();
+    } else {
+      if (chBtn) chBtn.style.display = '';
+      renderAddresses();
+      refreshHeroContact();
+      loadDashboardOnion(); // only works + shows when accessed via 127.0.0.1
+      loadIceConfig(); // load our hidden TURN for WebRTC voice
+      loadAuditorConfig(); // load auditor dashboard onion
+      loadGenesisGrail(); // load Genesis Holy Grail
+      refreshVaultList(); // populate vault list + quota
+      // Immediate strong load of rich data + background safety net
+      refreshStatus();
+      setTimeout(() => {
+        refreshStatus(); // second quick attempt
+        startRichStatusBackgroundLoading();
+      }, 600);
+    }
+  } catch (e) {
+    if (chBtn) chBtn.style.display = '';
+    refreshStatus();
+    renderAddresses();
+    refreshHeroContact();
+    loadDashboardOnion();
+    loadIceConfig();
+    refreshVaultList();
+    setTimeout(startRichStatusBackgroundLoading, 800);
+  }
+}
+
+async function lockDashboard() {
+  try { await fetch('/api/lock', { method: 'POST' }); } catch (e) {}
+  showLockOverlay();
+  // ensure change-code btn is hidden (showLockOverlay already does it, but belt-and-suspenders)
+  const chBtn = document.getElementById('changeCodeBtn');
+  if (chBtn) chBtn.style.display = 'none';
+}
+
+async function attemptUnlock() {
+  const inp = document.getElementById('lockCode');
+  const err = document.getElementById('lockError');
+  const btn = document.getElementById('unlockBtn');
+
+  if (!inp) return;
+  const code = inp.value.trim();
+
+  if (code.length !== 6) {
+    if (err) err.textContent = 'Нужно ровно 6 цифр';
+    inp.value = '';
+    inp.focus();
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  if (err) err.textContent = 'ПРОВЕРКА...';
+
+  try {
+    const res = await postJSON('/api/unlock', { code });
+
+    // Always clear the transient "ПРОВЕРКА..." immediately when we have an answer
+    if (err && err.textContent === 'ПРОВЕРКА...') err.textContent = '';
+
+    if (res.ok) {
+      // Hide overlay FIRST so UI feels instant (data loading happens after)
+      const ov = document.getElementById('lockOverlay');
+      if (ov) ov.style.display = 'none';
+
+      const chBtn = document.getElementById('changeCodeBtn');
+      if (chBtn) chBtn.style.display = '';
+
+      // Fire data loads in background — do not block the unlock feeling
+      refreshStatus();
+      renderAddresses();
+      refreshHeroContact();
+      loadDashboardOnion();
+      loadIceConfig(); // ensure TURN address card shows after unlock from overlay
+      loadAuditorConfig();
+      loadGenesisGrail();
+      startRichStatusBackgroundLoading();
+    } else {
+      if (err) err.textContent = 'НЕВЕРНЫЙ КОД';
+      inp.value = '';
+      inp.focus();
+    }
+  } catch (e) {
+    if (err) err.textContent = 'ОШИБКА СВЯЗИ (таймаут/сеть)';
+    inp.focus();
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function openChangeCodeModal() {
+  const modal = document.getElementById('changeCodeModal');
+  const cur = document.getElementById('currentForChange');
+  const nw = document.getElementById('newLockCode');
+  const err = document.getElementById('changeCodeError');
+
+  if (err) { err.textContent = ''; err.style.color = '#f66'; }
+  if (cur) {
+    cur.value = '';   // MUST BE EMPTY per spec (verification only, not prefilled)
+    cur.oninput = () => { if (err) err.textContent = ''; };
+  }
+  if (nw) {
+    nw.value = '';
+    nw.oninput = () => { if (err) err.textContent = ''; };
+  }
+
+  modal.style.display = 'flex';
+
+  setTimeout(() => {
+    if (cur) { cur.focus(); cur.select(); }
+  }, 80);
+}
+
+function closeChangeCodeModal() {
+  document.getElementById('changeCodeModal').style.display = 'none';
+}
+
+async function saveNewCode() {
+  const curInput = document.getElementById('currentForChange');
+  const nwInput = document.getElementById('newLockCode');
+  const err = document.getElementById('changeCodeError');
+  const saveBtn = document.getElementById('saveCodeBtn');
+  const cancelBtn = document.getElementById('cancelCodeBtn');
+
+  const cur = (curInput ? curInput.value.trim() : '');
+  const nw = (nwInput ? nwInput.value.trim() : '');
+
+  if (cur.length !== 6 || nw.length !== 6) {
+    if (err) err.textContent = 'Оба поля должны быть по 6 цифр';
+    return;
+  }
+
+  // Disable buttons + show transient state (prevents double-click and hang feeling)
+  if (saveBtn) saveBtn.disabled = true;
+  if (cancelBtn) cancelBtn.disabled = true;
+  if (err) err.textContent = 'Сохраняю...';
+
+  try {
+    const res = await postJSON('/api/change-lock-code', { current_code: cur, new_code: nw });
+
+    if (err && err.textContent === 'Сохраняю...') err.textContent = '';
+
+    if (res.ok) {
+      // Positive non-blocking feedback, then close
+      if (err) {
+        err.style.color = '#22c55e';
+        err.textContent = 'ГОТОВО';
+      }
+      setTimeout(() => {
+        if (err) { err.style.color = '#f66'; err.textContent = ''; }
+        closeChangeCodeModal();
+      }, 650);
+    } else {
+      if (err) err.textContent = 'Неверный текущий код';
+      if (curInput) curInput.focus();
+    }
+  } catch (e) {
+    if (err) err.textContent = 'Ошибка связи (таймаут)';
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+  }
+}
+
+function triggerPanic() {
+  if (!confirm('🚨 ПОДТВЕРДИТЕ PANIC\n\nЭто остановит Docker контейнеры, удалит все чаты, уничтожит криптоконтейнер и сотрёт файлы конфигурации. Восстановление возможно только через seed-фразу.\n\nПродолжить?')) return;
+  if (!confirm('🚨 ФИНАЛЬНОЕ ПОДТВЕРЖДЕНИЕ\n\nВСЕ ДАННЫЕ БУДУТ БЕЗВОЗВРАТНО УНИЧТОЖЕНЫ.\nSeed-фраза — единственный способ восстановления.\n\nВы уверены?')) return;
+  fetch('/api/panic', {method:'POST'})
+    .then(r=>r.json())
+    .then(d=>{ alert('PANIC выполнен:\n'+d.message); location.reload(); })
+    .catch(e=>alert('PANIC error: '+e.message));
+}
+
+function openRestoreModal() {
+  const existing = document.getElementById('restoreModal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'restoreModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:9999;';
+  modal.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid #b8860b;border-radius:12px;padding:30px;max-width:520px;width:90%;">
+      <h2 style="margin:0 0 16px;color:#b8860b;">📂 Restore Config from Container</h2>
+      <p style="font-size:0.85rem;opacity:0.8;margin-bottom:16px;">
+        Введите seed-фразу из 24 слов, чтобы расшифровать криптоконтейнер и восстановить
+        конфигурацию ноды, адреса и токены. После восстановления нода перезагрузится.
+      </p>
+      <textarea id="restoreSeedInput" rows="4"
+        style="width:100%;background:#0a0a0c;border:1px solid #333;border-radius:8px;padding:12px;color:#fff;font-size:0.9rem;font-family:monospace;box-sizing:border-box;"
+        placeholder="Введите 24 слова seed-фразы..."></textarea>
+      <div style="margin-top:16px;display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="this.closest('#restoreModal').remove()" style="background:#333;padding:10px 20px;border:none;border-radius:8px;color:#fff;cursor:pointer;">Отмена</button>
+        <button id="restoreBtn" onclick="doRestore()" style="background:#b8860b;padding:10px 20px;border:none;border-radius:8px;color:#000;cursor:pointer;font-weight:600;">🔓 Restore</button>
+      </div>
+      <div id="restoreStatus" style="margin-top:12px;font-size:0.85rem;"></div>
+    </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('restoreSeedInput').focus();
+}
+
+async function doRestore() {
+  const btn = document.getElementById('restoreBtn');
+  const status = document.getElementById('restoreStatus');
+  const seed = document.getElementById('restoreSeedInput').value.trim();
+  if (!seed || seed.split(' ').length < 12) {
+    status.innerHTML = '<span style="color:#ef4444;">Ошибка: введите seed-фразу (24 слова)</span>';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ Restoring...';
+  status.innerHTML = '<span style="color:#eab308;">Открываю контейнер и восстанавливаю файлы...</span>';
+
+  try {
+    const r = await fetch('/api/container/restore', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({seed_phrase: seed})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      status.innerHTML = '<span style="color:#22c55e;">✅ ' + d.message + '</span>';
+      if (d.restored && d.restored.length) {
+        status.innerHTML += '<div style="margin-top:8px;font-size:0.8rem;">Restored: ' + d.restored.join(', ') + '</div>';
+      }
+      setTimeout(() => { fetch('/api/restart', {method:'POST'}); }, 2000);
+    } else {
+      status.innerHTML = '<span style="color:#ef4444;">❌ ' + (d.error || 'Restore failed') + '</span>';
+      btn.disabled = false;
+      btn.textContent = '🔓 Restore';
+    }
+  } catch(e) {
+    status.innerHTML = '<span style="color:#ef4444;">❌ Error: ' + e.message + '</span>';
+    btn.disabled = false;
+    btn.textContent = '🔓 Restore';
+  }
+}
+
+let mr, ch=[];
+function toggleRecording(){
+  const b=document.getElementById('recBtn'), s=document.getElementById('recStatus');
+  if(!mr||mr.state==='inactive'){
+    navigator.mediaDevices.getUserMedia({audio:true}).then(st=>{
+      mr=new MediaRecorder(st); ch=[];
+      mr.ondataavailable=e=>ch.push(e.data);
+      mr.onstop=()=>{
+        const bl=new Blob(ch,{type:'audio/webm'});
+        s.textContent='Запись '+Math.round(bl.size/1024)+' KB — загружаем в Vault...';
+        uploadRecording(bl);
+      };
+      mr.start(); b.textContent='Остановить'; s.textContent='Идёт запись...';
+    }).catch(()=>alert('Нет микрофона'))
+  }else{
+    mr.stop(); b.textContent='Начать запись';
+  }
+}
+
+async function uploadRecording(blob) {
+  const fd = new FormData();
+  const ts = new Date().toISOString().replace(/[:.]/g,'-');
+  fd.append('file', blob, `recording-${ts}.webm`);
+  try {
+    const res = await fetch('/api/vault/upload', {method:'POST', body:fd});
+    if (res.ok) {
+      document.getElementById('recStatus').textContent = 'Загружено в Vault!';
+      refreshVaultList();
+    } else {
+      const txt = await res.text();
+      document.getElementById('recStatus').textContent = 'Ошибка загрузки: ' + txt;
+    }
+  } catch(e) {
+    document.getElementById('recStatus').textContent = 'Ошибка: ' + e;
+  }
+}
+
+async function uploadToVault() {
+  const f = document.getElementById('vaultFile').files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append('file', f);
+  const listEl = document.getElementById('vaultList');
+  listEl.innerHTML = 'Загрузка «' + f.name + '»...';
+  try {
+    const res = await fetch('/api/vault/upload', {method:'POST', body:fd});
+    if (res.ok) {
+      listEl.innerHTML = 'Загружено: «' + f.name + '»';
+      document.getElementById('vaultFile').value = '';
+      refreshVaultList();
+    } else {
+      const txt = await res.text();
+      listEl.innerHTML = 'Ошибка: ' + txt;
+    }
+  } catch(e) {
+    listEl.innerHTML = 'Ошибка: ' + e;
+  }
+}
+
+async function refreshVaultList() {
+  const listEl = document.getElementById('vaultList');
+  const quotaEl = document.getElementById('vaultQuota');
+  listEl.innerHTML = 'Загрузка списка...';
+  try {
+    const res = await fetch('/api/vault/list', {cache:'no-store'});
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const files = data.files || [];
+    const used = data.used_mb || 0;
+    const quota = data.quota_mb || 2048;
+    quotaEl.textContent = `Использовано: ${used.toFixed(1)} / ${quota} MB (${files.length} файлов)`;
+    const bar = document.getElementById('vaultBar');
+    if (bar) {
+      const pct = Math.min(100, (used / quota) * 100);
+      bar.style.width = pct + '%';
+    }
+
+    if (files.length === 0) {
+      listEl.innerHTML = 'Пусто. Загрузите файлы, заметки или записи.';
+      return;
+    }
+    let html = '<table style="width:100%; font-size:0.8rem; border-collapse:collapse;">';
+    files.sort((a,b)=> b.name.localeCompare(a.name)); // recent first-ish
+    for (const f of files) {
+      const sizeKB = (f.size/1024).toFixed(1);
+      const isAudio = f.name.match(/\.(webm|mp3|wav|ogg)$/i);
+      const isImage = f.name.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
+      const isNote = f.name.match(/\.(txt|md|note)$/i);
+      let preview = '';
+      if (isImage) {
+        preview = `<img src="/api/vault/download?name=${encodeURIComponent(f.name)}" style="max-height:30px; max-width:50px; vertical-align:middle; border:1px solid #333;" onerror="this.style.display='none'">`;
+      } else if (isAudio) {
+        preview = '🎵';
+      } else if (isNote) {
+        preview = '📝';
+      } else {
+        preview = '📄';
+      }
+      html += `<tr>
+        <td style="padding:2px 4px; border-bottom:1px solid #222; word-break:break-all;">${preview} ${f.name}</td>
+        <td style="padding:2px 4px; border-bottom:1px solid #222; text-align:right; white-space:nowrap;">${sizeKB} KB</td>
+        <td style="padding:2px 4px; border-bottom:1px solid #222; white-space:nowrap;">
+          <button onclick="downloadVaultFile('${f.name.replace(/'/g,"\\'")}')" style="padding:2px 6px; font-size:0.7rem;">⬇</button>
+          ${isAudio ? `<button onclick="playVaultAudio('${f.name.replace(/'/g,"\\'")}')" style="padding:2px 6px; font-size:0.7rem;">▶</button>` : ''}
+          ${isNote ? `<button onclick="viewNote('${f.name.replace(/'/g,"\\'")}')" style="padding:2px 6px; font-size:0.7rem;">👁</button>` : ''}
+          <button onclick="deleteVaultFile('${f.name.replace(/'/g,"\\'")}')" style="padding:2px 6px; font-size:0.7rem; background:#ef4444;">✕</button>
+        </td>
+      </tr>`;
+    }
+    html += '</table>';
+    listEl.innerHTML = html;
+    filterVault(currentVaultFilter);
+  } catch(e) {
+    listEl.innerHTML = 'Ошибка загрузки списка: ' + e;
+  }
+}
+
+async function downloadVaultFile(name) {
+  const url = '/api/vault/download?name=' + encodeURIComponent(name);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function playVaultAudio(name) {
+  const url = '/api/vault/download?name=' + encodeURIComponent(name);
+  const audio = new Audio(url);
+  audio.play().catch(e => alert('Ошибка воспроизведения: ' + e));
+}
+
+async function viewNote(name) {
+  try {
+    const res = await fetch('/api/vault/download?name=' + encodeURIComponent(name));
+    if (!res.ok) throw new Error(await res.text());
+    const text = await res.text();
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999';
+    modal.innerHTML = `
+      <div style="background:#16161b;padding:20px;border-radius:12px;max-width:90%;width:600px;max-height:80vh;overflow:auto;">
+        <h3 style="margin:0 0 10px;">${name}</h3>
+        <pre style="white-space:pre-wrap; background:#111; padding:10px; border-radius:6px; font-size:0.9rem; max-height:50vh; overflow:auto;">${text.replace(/</g,'&lt;')}</pre>
+        <div style="margin-top:10px; text-align:right;">
+          <button onclick="this.closest('.modal').remove()" style="background:#444;">Закрыть</button>
+        </div>
+      </div>
+    `;
+    modal.className = 'modal';
+    document.body.appendChild(modal);
+    modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  } catch(e) {
+    alert('Ошибка просмотра: ' + e);
+  }
+}
+
+async function deleteVaultFile(name) {
+  if (!confirm('Удалить «' + name + '»?')) return;
+  try {
+    const res = await fetch('/api/vault/delete?name=' + encodeURIComponent(name), {method:'POST'});
+    if (res.ok) {
+      refreshVaultList();
+    } else {
+      alert('Ошибка удаления: ' + await res.text());
+    }
+  } catch(e) { alert('Ошибка: ' + e); }
+}
+
+async function saveNote() {
+  const content = document.getElementById('noteContent').value.trim();
+  if (!content) return;
+  const name = 'note-' + new Date().toISOString().slice(0,19).replace(/[:T]/g,'-') + '.txt';
+  try {
+    const res = await fetch('/api/vault/save-note', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({name, content})
+    });
+    if (res.ok) {
+      document.getElementById('noteContent').value = '';
+      refreshVaultList();
+    } else {
+      alert('Ошибка сохранения заметки: ' + await res.text());
+    }
+  } catch(e) { alert('Ошибка: ' + e); }
+}
+
+let currentVaultFilter = 'all';
+function filterVault(type) {
+  currentVaultFilter = type;
+  const rows = document.querySelectorAll('#vaultList tr');
+  rows.forEach(row => {
+    const name = row.textContent.toLowerCase();
+    let show = true;
+    if (type === 'note') show = name.includes('.txt') || name.includes('.md') || name.includes('note');
+    else if (type === 'media') show = /\.(jpg|jpeg|png|gif|webp|svg)/.test(name);
+    else if (type === 'audio') show = /\.(webm|mp3|wav|ogg)/.test(name);
+    else if (type === 'file') show = !(/\.(txt|md|note|jpg|jpeg|png|gif|webp|svg|webm|mp3|wav|ogg)/.test(name));
+    row.style.display = show ? '' : 'none';
+  });
+}
+function startCallDemo() {
+  const p = document.getElementById('peer').value || 'собеседник';
+  const statusEl = document.getElementById('callStatus');
+  statusEl.innerHTML = 'Инициализация WebRTC с нашим onion TURN...';
+
+  const config = { 
+    iceServers: iceServers.length > 0 ? iceServers : [{ urls: 'stun:stun.l.google.com:19302' }],
+    iceTransportPolicy: 'relay'  // force through TURN for testing the onion server
+  };
+  const pc = new RTCPeerConnection(config);
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      console.log('ICE candidate:', e.candidate.candidate);
+      if (e.candidate.candidate.includes('relay') || e.candidate.candidate.includes('turn')) {
+        console.log('SUCCESS: relay candidate via TURN!');
+      }
+    }
+  };
+
+  pc.onicegatheringstatechange = () => {
+    if (pc.iceGatheringState === 'complete') {
+      statusEl.innerHTML = `WebRTC готов с ${p}. ICE собраны (relay через onion TURN если нужно). <button onclick="pc.close(); document.getElementById('callStatus').innerHTML='Завершено'">Завершить</button>`;
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    console.log('ICE connection state:', pc.iceConnectionState);
+    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+      statusEl.innerHTML = `Соединение установлено с ${p}!`;
+    } else if (pc.iceConnectionState === 'failed') {
+      statusEl.innerHTML = `ICE failed для ${p}. Проверь логи кандидатов и cert trust.`;
+    }
+  };
+
+  // Get local audio to trigger ICE
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    statusEl.innerHTML = `Микрофон активен. Собираем relay ICE для звонка с ${p} (через onion TURN)...`;
+    // Create offer to start gathering
+    pc.createOffer().then(offer => pc.setLocalDescription(offer));
+  }).catch(err => {
+    statusEl.innerHTML = 'Нет доступа к микрофону: ' + err + ' (но ICE config загружен)';
+    pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(()=>{});
+  });
+
+  // Expose for manual close
+  window.currentPC = pc;
+}
+
+function setRemoteSDP() {
+  if (!window.currentPC) {
+    alert('Сначала запустите startCallDemo на этой стороне');
+    return;
+  }
+  const sdpText = document.getElementById('sdpExchange').value.trim();
+  if (!sdpText) return;
+  const type = sdpText.includes('o=-') && sdpText.includes('a=group:') ? 'offer' : 'answer'; // rough detect
+  const desc = { type, sdp: sdpText };
+  window.currentPC.setRemoteDescription(desc).then(() => {
+    document.getElementById('callStatus').innerHTML += ' Remote SDP set. ';
+    if (type === 'offer') {
+      window.currentPC.createAnswer().then(ans => {
+        window.currentPC.setLocalDescription(ans);
+        document.getElementById('sdpExchange').value = ans.sdp;
+        document.getElementById('callStatus').innerHTML += ' Answer created, copy it to other side. ';
+      });
+    }
+  }).catch(e => alert('setRemote error: ' + e));
+}
+
+function createAnswerFromOffer() {
+  if (!window.currentPC) {
+    // start as callee
+    startCallDemo();
+  }
+  const offerText = document.getElementById('sdpExchange').value.trim();
+  if (!offerText) return;
+  const desc = { type: 'offer', sdp: offerText };
+  window.currentPC.setRemoteDescription(desc).then(() => {
+    window.currentPC.createAnswer().then(ans => {
+      window.currentPC.setLocalDescription(ans);
+      document.getElementById('sdpExchange').value = ans.sdp;
+      document.getElementById('callStatus').innerHTML += ' Answer created (as callee), copy to caller. ';
+    });
+  }).catch(e => alert('error: ' + e));
+}
+
+function copyLocalSDP() {
+  if (!window.currentPC || !window.currentPC.localDescription) {
+    alert('No local SDP yet, run the demo first');
+    return;
+  }
+  const sdp = window.currentPC.localDescription.sdp;
+  navigator.clipboard.writeText(sdp).then(() => alert('Local SDP copied'));
+}
+
+// ===== Real 2-tab auto-signaling tester using our TURN + server signaling (for verification) =====
+let testPC = null;
+let testPollTimer = null;
+let testRoom = 'room1';
+let testRole = '';
+
+function logTest(msg) {
+  const el = document.getElementById('callTestLog');
+  if (!el) return;
+  el.textContent = el.textContent + '\n' + new Date().toLocaleTimeString() + ' ' + msg;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendSignal(room, payload) {
+  try {
+    await fetch('/api/call-signal?room=' + encodeURIComponent(room), {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+  } catch(e){ logTest('signal send err: '+e); }
+}
+
+async function pollSignal(room, myRole) {
+  try {
+    const r = await fetch('/api/call-signal?room=' + encodeURIComponent(room));
+    const st = await r.json();
+    if (!testPC) return;
+
+    // If we are caller and there is answer -> set it
+    if (myRole === 'caller' && st.answer && !testPC.remoteDescription) {
+      logTest('got answer, setting...');
+      await testPC.setRemoteDescription({type:'answer', sdp: st.answer});
+    }
+    // If we are callee and there is offer -> set and create answer (once)
+    if (myRole === 'callee' && st.offer && !testPC.remoteDescription) {
+      logTest('got offer, creating answer...');
+      await testPC.setRemoteDescription({type:'offer', sdp: st.offer});
+      const ans = await testPC.createAnswer();
+      await testPC.setLocalDescription(ans);
+      await sendSignal(room, {answer: ans.sdp});
+      logTest('answer sent');
+    }
+    // Exchange candidates (simple append)
+    if (st.candidates && Array.isArray(st.candidates)) {
+      for (const c of st.candidates) {
+        if (c && c.trim()) {
+          try { await testPC.addIceCandidate({candidate: c, sdpMid: '0', sdpMLineIndex: 0}); } catch(_) {}
+        }
+      }
+    }
+  } catch(e){ /* ignore poll errors */ }
+}
+
+async function startCallerTest() {
+  stopCallTest();
+  testRoom = document.getElementById('peer').value || 'room1';
+  testRole = 'caller';
+  const logEl = document.getElementById('callTestLog');
+  if (logEl) logEl.textContent = '';
+  logTest('Caller starting for room ' + testRoom + ' (using our TURN)');
+
+  const cfg = {
+    iceServers: iceServers.length ? iceServers : [{urls:'stun:stun.l.google.com:19302'}],
+    iceTransportPolicy: 'relay'
+  };
+  testPC = new RTCPeerConnection(cfg);
+
+  testPC.onicecandidate = (e) => {
+    if (e.candidate && e.candidate.candidate) {
+      logTest('ice cand: ' + (e.candidate.candidate.includes('relay') ? 'RELAY ✓' : ''));
+      sendSignal(testRoom, {candidate: e.candidate.candidate});
+    }
+  };
+  testPC.oniceconnectionstatechange = () => {
+    logTest('ICE state: ' + testPC.iceConnectionState);
+    if (testPC.iceConnectionState === 'connected' || testPC.iceConnectionState === 'completed') {
+      logTest('✅ MEDIA CONNECTED via our TURN! (audio should work if mics ok)');
+    }
+  };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t => testPC.addTrack(t, stream));
+    logTest('mic ok');
+  } catch(e){ logTest('no mic: ' + e); }
+
+  const offer = await testPC.createOffer();
+  await testPC.setLocalDescription(offer);
+  await sendSignal(testRoom, {offer: offer.sdp});
+  logTest('offer sent, polling for answer...');
+
+  testPollTimer = setInterval(() => pollSignal(testRoom, 'caller'), 1200);
+  window.testPC = testPC;
+}
+
+async function startCalleeTest() {
+  stopCallTest();
+  testRoom = document.getElementById('peer').value || 'room1';
+  testRole = 'callee';
+  const logEl = document.getElementById('callTestLog');
+  if (logEl) logEl.textContent = '';
+  logTest('Callee waiting on room ' + testRoom);
+
+  const cfg = {
+    iceServers: iceServers.length ? iceServers : [{urls:'stun:stun.l.google.com:19302'}],
+    iceTransportPolicy: 'relay'
+  };
+  testPC = new RTCPeerConnection(cfg);
+
+  testPC.onicecandidate = (e) => {
+    if (e.candidate && e.candidate.candidate) {
+      logTest('ice cand: ' + (e.candidate.candidate.includes('relay') ? 'RELAY ✓' : ''));
+      sendSignal(testRoom, {candidate: e.candidate.candidate});
+    }
+  };
+  testPC.oniceconnectionstatechange = () => {
+    logTest('ICE state: ' + testPC.iceConnectionState);
+    if (testPC.iceConnectionState === 'connected' || testPC.iceConnectionState === 'completed') {
+      logTest('✅ MEDIA CONNECTED via our TURN!');
+    }
+  };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t => testPC.addTrack(t, stream));
+    logTest('mic ok, waiting for offer...');
+  } catch(e){ logTest('no mic: ' + e); }
+
+  testPollTimer = setInterval(() => pollSignal(testRoom, 'callee'), 1200);
+  window.testPC = testPC;
+}
+
+function stopCallTest() {
+  if (testPollTimer) { clearInterval(testPollTimer); testPollTimer = null; }
+  if (testPC) { try { testPC.close(); } catch(_){} testPC = null; }
+  const logEl = document.getElementById('callTestLog');
+  if (logEl) logEl.textContent += '\n[stopped]';
+}
+
+// ===== TRON USDT Treasury + Silver Rounds (Island funding + royal + dividends per plan) =====
+async function checkUsdtDeposits() {
+  const el = document.getElementById('treasury-state');
+  if (!el) return;
+  el.textContent = 'Querying TronGrid for USDT TRC20 to treasury... (or sim log)';
+  try {
+    const data = await safeFetch('/api/treasury/usdt-deposits', 3);
+    let txt = `Treasury: ${data.treasury || 'set in tron_treasury.txt'}\n`;
+    if (data.recent_deposits && data.recent_deposits.length) {
+      data.recent_deposits.forEach(d => {
+        txt += `+ ${d.amount_usdt} USDT from ${d.from} @ ${d.time} (tx ${String(d.tx||'').slice(0,10)}...)\n`;
+      });
+    } else if (data.sim_log) {
+      txt += 'Sim/demo log (use simulate + init via buttons/curls):\n' + String(data.sim_log).slice(-600);
+    } else {
+      txt += 'No recent deposits (set real treasury addr or use Sim).';
+    }
+    el.textContent = txt;
+    setTimeout(refreshTreasuryState, 400);
+  } catch(e) {
+    el.textContent = 'Error querying TRON: ' + e;
+  }
+}
+
+async function initSilverRound() {
+  const el = document.getElementById('treasury-state');
+  if (!el) return;
+  el.textContent = 'Initiating silver round (royal triggers broker buy, tokenize batch in reserve, 20% treasury, 80% pro-rata ng divs to banknote shares as equity)...';
+  try {
+    const data = await postJSON('/api/treasury/init-silver-round', {});
+    el.textContent = 'Round processed:\n' + JSON.stringify(data, null, 2) + '\n\nBlack hole active: more shares registered -> stronger pull on future capital.';
+    setTimeout(refreshTreasuryState, 200);
+  } catch(e) {
+    el.textContent = 'Error: ' + e;
+  }
+  refreshTreasuryState(); // also refreshes billing mini
+  setTimeout(loadRadio, 400); // new round announcement should appear in radio library
+}
+
+async function simulateUsdt() {
+  const el = document.getElementById('treasury-state');
+  const inp = document.getElementById('simUsdt');
+  if (!el || !inp) return;
+  const amt = inp.value || '5000';
+  el.textContent = 'Simulating USDT ' + amt + ' inflow (TRON funding for silver round / broker batch)...';
+  try {
+    const res = await fetch('/api/treasury/simulate-usdt?amount=' + encodeURIComponent(amt));
+    const d = await res.json();
+    el.textContent = 'Sim done: ' + d.simulated + ' USDT logged. Now "Init Round (Royal)" to process into reserve + dividends to shares.';
+    setTimeout(checkUsdtDeposits, 200);
+  } catch(e) {
+    el.textContent = 'Sim error: ' + e;
+  }
+}
+
+async function refreshTreasuryState() {
+  const el = document.getElementById('treasury-state');
+  const badge = document.getElementById('royal-badge');
+  if (!el) return;
+  el.textContent = 'Refreshing live treasury state...';
+  try {
+    const s = await safeFetch('/api/treasury/state', 3);
+    const ng = s.current_reserve_ng || 0;
+    const g = (ng / 1e9).toFixed(2);
+    const oz = (ng / 31103480000).toFixed(4);
+    let txt = `Reserve: ${ng} ng  (~${g} g  ~${oz} oz silver)\n`;
+    txt += `Treasury share (20%): ~${s.treasury_share_ng || 0} ng\n`;
+    txt += `Royal node: ${s.is_royal ? '👑 YES — full control over tokenization of everything' : 'sub (will obey royal SMP cmds)'}\n`;
+    txt += `Banknote Shares (equity — pro-rata ng yield every round):\n`;
+    if (s.banknotes && s.banknotes.length > 0) {
+      s.banknotes.forEach(b => {
+        const acc = b.accrued_ng || 0;
+        const denom = b.denomination_tlr || b.denom || 0;
+        txt += `  • ${b.serial} | ${denom} TLR | ${b.holder || '?'} | accrued ${acc} ng\n`;
+      });
+    } else {
+      txt += '  (no shares — register via form above to participate in funnel)\n';
+    }
+    txt += `RWA tokenized items: ${(s.rwa || []).length} (silver-backed physical value tokens)\n`;
+    txt += `Last rounds (tail):\n${s.recent_rounds || '—'}\n`;
+    txt += `(Funnel active: register/hold more shares to capture yield from next USDT->silver inflows)`;
+    el.textContent = txt;
+    if (badge) badge.textContent = s.is_royal ? '👑 ROYAL (control)' : 'sub-node';
+    if (badge) badge.style.background = s.is_royal ? '#166534' : '#111';
+
+    // Billing mini (monetization in the same silver unit)
+    const bp = document.getElementById('billing-prices');
+    if (bp && s.billing_prices) {
+      bp.textContent = `Round: ${(s.billing_prices.init_silver_round_ng||0)/1e9}g  |  RWA: ${(s.billing_prices.rwa_register_ng||0)/1e9}g silver`;
+    }
+    const pm = document.getElementById('billing-payments');
+    if (pm && s.recent_payments && s.recent_payments.length) {
+      let phtml = '';
+      s.recent_payments.slice(0,3).forEach(p => {
+        phtml += `${p.time.slice(11,19)} +${(p.amount_ng||0)/1e9}g for ${p.for}\n`;
+      });
+      pm.textContent = phtml || 'no payments yet';
+    } else if (pm) {
+      pm.textContent = 'no payments yet';
+    }
+  } catch(e) {
+    el.textContent = 'State refresh err: ' + e;
+  }
+}
+
+async function registerRWA() {
+  const el = document.getElementById('treasury-state');
+  const type = document.getElementById('rwaType') ? document.getElementById('rwaType').value : 'silver_coin';
+  const serial = (document.getElementById('rwaSerial') && document.getElementById('rwaSerial').value) || 'DEMO-001';
+  const backingStr = (document.getElementById('rwaBacking') && document.getElementById('rwaBacking').value) || '1000000000';
+  const holder = (document.getElementById('rwaHolder') && document.getElementById('rwaHolder').value) || 'demo';
+  const backing = parseInt(backingStr, 10) || 1000000000;
+  if (!el) return;
+  el.textContent = `Registering RWA ${type} ${serial} with ${backing} ng silver backing (tokenization of everything)...`;
+  try {
+    const res = await postJSON('/api/rwa/register', {type, serial, backing_ng: backing, holder});
+    el.textContent = 'RWA registered: ' + JSON.stringify(res, null, 2) + '\nToken: ' + (res.item && res.item.token);
+    setTimeout(refreshTreasuryState, 150);
+  } catch(e) {
+    el.textContent = 'RWA reg err: ' + e;
+  }
+  refreshTreasuryState(); // refresh billing too
+}
+
+async function registerBanknoteShare() {
+  const el = document.getElementById('treasury-state');
+  const serial = (document.getElementById('bnSerial') && document.getElementById('bnSerial').value) || 'MB-NEW';
+  const denomStr = (document.getElementById('bnDenom') && document.getElementById('bnDenom').value) || '1';
+  const holder = (document.getElementById('bnHolder') && document.getElementById('bnHolder').value) || 'citizen';
+  const denom = parseFloat(denomStr) || 1.0;
+  if (!el) return;
+  el.textContent = `Registering banknote ${serial} (${denom} TLR) for ${holder} as equity share (will receive ng silver dividends on every round)...`;
+  try {
+    const res = await postJSON('/api/treasury/register-banknote', {serial, denomination_tlr: denom, holder});
+    el.textContent = 'Share registered: ' + JSON.stringify(res) + '\nThis banknote now participates in the silver black hole yield.';
+    setTimeout(refreshTreasuryState, 150);
+  } catch(e) {
+    el.textContent = 'Register share err: ' + e;
+  }
+  refreshTreasuryState();
+}
+
+// ===== Radio / Library JS =====
+let radioAudios = [];
+async function loadRadio() {
+  const el = document.getElementById('radio-list');
+  if (!el) return;
+  el.textContent = 'Loading radio library...';
+  try {
+    const d = await safeFetch('/api/radio/list', 3);
+    radioAudios = d.audios || [];
+    let html = '';
+    if (radioAudios.length) {
+      radioAudios.forEach((a, i) => {
+        html += `<div style="margin:2px 0;">🎵 ${a.name} <button onclick="playRadio(${i})" style="font-size:0.55rem; padding:0 3px;">▶ Play</button> <span style="opacity:0.6;">(${(a.size/1024/1024).toFixed(1)}MB)</span></div>`;
+      });
+    } else {
+      html += '<div style="opacity:0.7;">No audio in Vault yet. Record/upload via Vault card (recordings or .mp3/.webm etc).</div>';
+    }
+
+    // Nice round announcements (from the structured field we write on every silver round)
+    const roundAnns = d.round_announcements || [];
+    if (roundAnns.length) {
+      html += '<div style="margin-top:6px; border-top:1px solid #22c55e; padding-top:4px;"><b>📣 Раунды токенизации (экономика в радио-эфире)</b></div>';
+      roundAnns.slice(0,3).forEach(ann => {
+        const t = String(ann.text || ann).replace(/\n/g, '<br>');
+        html += `<div style="background:#0f172a; padding:4px; margin:3px 0; border-radius:3px; font-size:0.58rem; line-height:1.25; border-left:3px solid #22c55e;">${t}</div>`;
+      });
+    } else if (d.announcements && d.announcements.length) {
+      // fallback to raw
+      html += '<div style="margin-top:4px; border-top:1px dashed #333; padding-top:2px;"><b>Recent announcements:</b></div>';
+      d.announcements.slice(0,3).forEach(a => {
+        html += `<div style="opacity:0.85; font-size:0.55rem;">• ${String(a).slice(0,120)}</div>`;
+      });
+    }
+    el.innerHTML = html;
+
+    // Auto-populate the prominent "latest round announcement" box
+    const latestBox = document.getElementById('radio-latest-round');
+    if (latestBox && d.round_announcements && d.round_announcements.length) {
+      const ann = d.round_announcements[0];
+      latestBox.style.display = 'block';
+      latestBox.innerHTML = `<strong>📣 Последнее объявление раунда (${ann.id})</strong><br><br>${ann.text.replace(/\n/g, '<br>')}`;
+    }
+  } catch(e) {
+    el.textContent = 'Radio load err: ' + e;
+  }
+}
+function playRadio(idx) {
+  const a = radioAudios[idx];
+  if (!a) return;
+  // Use the /api/radio/play endpoint so it works through the same access rules
+  const url = '/api/radio/play?name=' + encodeURIComponent(a.name);
+  const player = new Audio(url);
+  player.controls = true;
+  player.style.width = '100%';
+  player.style.margin = '4px 0';
+  const el = document.getElementById('radio-list');
+  if (el) {
+    const old = document.getElementById('radio-player');
+    if (old) old.remove();
+    player.id = 'radio-player';
+    el.appendChild(player);
+  }
+  player.play().catch(()=>{});
+}
+
+async function showLatestRoundAnnouncement() {
+  const box = document.getElementById('radio-latest-round');
+  if (!box) return;
+  box.style.display = 'block';
+  box.textContent = 'Загрузка последнего объявления раунда...';
+  try {
+    const d = await safeFetch('/api/radio/list', 3);
+    if (d.round_announcements && d.round_announcements.length) {
+      const ann = d.round_announcements[0];
+      box.innerHTML = `<strong>${ann.id}</strong><br><br>${ann.text.replace(/\n/g, '<br>')}<br><br><button onclick="speakAnnouncement(this)" style="font-size:0.6rem; background:#166534; color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;">🔊 Прочитать вслух (radio)</button>`;
+    } else {
+      box.textContent = 'Нет объявлений раундов пока. Запусти Init Silver Round.';
+    }
+  } catch(e) {
+    box.textContent = 'Ошибка: ' + e;
+  }
+}
+
+function speakAnnouncement(btn) {
+  const box = document.getElementById('radio-latest-round');
+  if (!box || !('speechSynthesis' in window)) {
+    alert('Браузер не поддерживает речь или нет текста.');
+    return;
+  }
+  const text = box.innerText || box.textContent || '';
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ru-RU';
+  utter.rate = 0.95;
+  window.speechSynthesis.speak(utter);
+  if (btn) btn.textContent = '🔊 Идёт чтение...';
+  utter.onend = () => { if (btn) btn.textContent = '🔊 Прочитать вслух (radio)'; };
+}
+
+// ===== Anonymous Channels JS =====
+async function loadChannels() {
+  const el = document.getElementById('channels-list');
+  if (!el) return;
+  el.textContent = 'Loading channels...';
+  try {
+    const d = await safeFetch('/api/channels/list', 3);
+    let html = '';
+    const chs = d.channels || [];
+    if (chs.length) {
+      chs.forEach(c => {
+        const views = c.views || 0;
+        const perView = c.per_view_price_ng || 10000000;
+        html += `<div style="margin:3px 0; border-bottom:1px dashed #333; padding-bottom:2px;">📡 <b>${c.name}</b> (${c.id})<br>${c.desc || ''}<br>Sub: ${c.price_ng} ng | Per-view: ${perView} ng | Views: ${views}<br><button onclick="accessChannel('${c.id}')" style="font-size:0.55rem; padding:0 3px; background:#a78bfa;">Subscribe</button> <button onclick="viewChannel('${c.id}')" style="font-size:0.55rem; padding:0 3px; background:#7c3aed;">View (pay traffic)</button> <button onclick="loadPostsForChannel('${c.id}')" style="font-size:0.55rem; padding:0 3px; background:#a78bfa;">Posts</button></div>`;
+      });
+    } else {
+      html = '<div style="opacity:0.7;">No channels yet. Create one (royal/local).</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.textContent = 'Channels load err: ' + e;
+  }
+}
+
+function showCreateChannelForm() {
+  const f = document.getElementById('create-channel-form');
+  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function createChannel() {
+  const name = document.getElementById('chName').value || 'Demo Channel';
+  const desc = document.getElementById('chDesc').value || 'Anonymous media channel paid in silver ng';
+  const priceStr = document.getElementById('chPrice').value || '1000000000';
+  const price = parseInt(priceStr, 10) || 1000000000;
+  try {
+    const res = await postJSON('/api/channels/create', {name, desc, price_ng: price});
+    document.getElementById('channel-access-result').textContent = 'Created: ' + res.channel.id;
+    loadChannels();
+  } catch(e) {
+    document.getElementById('channel-access-result').textContent = 'Create err: ' + e;
+  }
+}
+
+async function accessChannel(id) {
+  const resEl = document.getElementById('channel-access-result');
+  resEl.textContent = 'Paying for access to ' + id + '...';
+  try {
+    const res = await postJSON('/api/channels/access', {channel_id: id});
+    resEl.textContent = 'Access OK. Paid ' + res.paid_ng + ' ng. (Real content delivery via SMP later)';
+    // Also refresh billing view if treasury state is visible
+    if (typeof refreshTreasuryState === 'function') setTimeout(refreshTreasuryState, 300);
+    loadChannels();
+  } catch(e) {
+    resEl.textContent = 'Access err: ' + e;
+  }
+}
+
+async function viewChannel(id) {
+  const resEl = document.getElementById('channel-access-result');
+  resEl.textContent = 'Paying per-view traffic fee for ' + id + '...';
+  try {
+    const res = await postJSON('/api/channels/view', {channel_id: id});
+    resEl.textContent = 'View OK. Paid ' + res.paid_ng + ' ng for traffic. Views now: ' + res.views_now;
+    if (typeof refreshTreasuryState === 'function') setTimeout(refreshTreasuryState, 300);
+    loadChannels();
+  } catch(e) {
+    resEl.textContent = 'View err: ' + e;
+  }
+}
+
+let currentPostsChannel = '';
+async function loadPostsForChannel(id) {
+  const resEl = document.getElementById('channel-access-result');
+  resEl.textContent = 'Loading posts for ' + id + '...';
+  currentPostsChannel = id;
+  try {
+    const d = await safeFetch('/api/channels/posts?channel_id=' + encodeURIComponent(id), 3);
+    let html = '<b>Posts in ' + id + ':</b><br>';
+    if (d.posts && d.posts.length) {
+      d.posts.slice(0,5).forEach(p => {
+        html += `<div style="margin:2px 0; font-size:0.55rem;">${p.time.slice(0,19)}: ${p.message} ${p.vault_ref ? '(vault:'+p.vault_ref+')' : ''} <button onclick="viewPost('${id}')" style="font-size:0.5rem;">View (pay traffic)</button></div>`;
+      });
+    } else {
+      html += '<div style="opacity:0.7;">No posts yet.</div>';
+    }
+    html += `<div style="margin-top:4px;"><input id="postMsg" placeholder="message" style="width:160px; font-size:0.55rem;"> <input id="postVault" placeholder="vault ref (opt)" style="width:80px; font-size:0.55rem;"> <button onclick="postToChannel('${id}')" style="font-size:0.55rem;">Post</button></div>`;
+    resEl.innerHTML = html;
+  } catch(e) {
+    resEl.textContent = 'Posts err: ' + e;
+  }
+}
+
+async function postToChannel(id) {
+  const msg = document.getElementById('postMsg').value || 'test post';
+  const vref = document.getElementById('postVault').value || '';
+  const resEl = document.getElementById('channel-access-result');
+  try {
+    await postJSON('/api/channels/post', {channel_id: id, message: msg, vault_ref: vref});
+    resEl.textContent = 'Posted. Refreshing...';
+    loadPostsForChannel(id);
+  } catch(e) {
+    resEl.textContent = 'Post err: ' + e;
+  }
+}
+
+function viewPost(id) {
+  // For demo, viewing a post just triggers a per-view charge on the channel
+  viewChannel(id);
+}
+
+function boot(){
+  // Prepare rich cards with neutral hint text (will be overwritten by init or unlock)
+  const smpEl = document.getElementById('smp-info');
+  const xftpEl = document.getElementById('xftp-info');
+  const storageEl = document.getElementById('storage-info');
+  if (smpEl)   smpEl.innerHTML   = '<div style="opacity:0.7">Загрузка данных...</div>';
+  if (xftpEl)  xftpEl.innerHTML  = '<div style="opacity:0.7">Загрузка данных...</div>';
+  if (storageEl) storageEl.innerHTML = '<div style="opacity:0.7">Загрузка данных...</div>';
+
+  // Everything goes through initLockOnLoad — it checks lock status,
+  // then renders addresses, ice, auditor, genesis, vault, status.
+  initLockOnLoad();
+}
+
+document.addEventListener('DOMContentLoaded', boot);
+</script>
+<div class="card">
+  <h2>🛒 Market (hand-to-hand)</h2>
+  <button onclick="loadMarket()">Load Listings</button>
+  <pre id="market-list"></pre>
+  <small>Prices in ng silver. Sell/buy via /api/market or bot 'market_*' cmds. Auto-posts to channels on sell.</small>
+</div>
+<script>
+async function loadMarket() {
+  const r = await fetch('/api/market/list'); const d = await r.json();
+  document.getElementById('market-list').textContent = JSON.stringify(d, null, 2);
+}
+</script>
+</body>
+</html>

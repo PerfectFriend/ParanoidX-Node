@@ -1,0 +1,16 @@
+[Unit]
+Description=simplex-node (SMP + XFTP + Tor + Dashboard)
+After=network-online.target docker.service
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+WorkingDirectory=/home/tomas/simplex-node/docker
+ExecStart=/home/tomas/simplex-node/docker/startup.sh
+ExecStop=/usr/bin/docker compose -f /home/tomas/simplex-node/docker/docker-compose.yml down
+
+[Install]
+WantedBy=multi-user.target

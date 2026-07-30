@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/middleware"
 )
 
 //go:embed royal_ui.html

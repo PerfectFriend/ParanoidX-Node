@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/middleware"
 )
 
 

@@ -17,8 +17,8 @@ import (
 	"github.com/gorilla/websocket"
 	"log/slog"
 
-	"simplex-node/internal/api"
-	"simplex-node/internal/transport"
+	"ParanoidX/internal/api"
+	"ParanoidX/internal/transport"
 )
 
 // Bridge manages the WebSocket connection to the simplex-chat CLI process.

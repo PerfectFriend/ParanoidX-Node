@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🔍 Auditor Dashboard — Saint Mary Liberty Island</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0e14; color: #c8d6e5; font-family: 'Courier New', monospace; padding: 20px; }
+h1 { color: #feca57; font-size: 1.4em; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+h2 { color: #54a0ff; font-size: 1.1em; margin: 20px 0 10px; border-bottom: 1px solid #1e2a3a; padding-bottom: 5px; }
+h3 { color: #5f27cd; font-size: 1em; margin: 10px 0; }
+.card { background: #111820; border: 1px solid #1e2a3a; border-radius: 6px; padding: 15px; margin-bottom: 12px; }
+.stat-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.stat { background: #0a0e14; border-radius: 4px; padding: 10px 15px; flex: 1; min-width: 120px; text-align: center; }
+.stat .label { font-size: 0.7em; color: #8395a7; text-transform: uppercase; }
+.stat .value { font-size: 1.3em; color: #feca57; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+th { text-align: left; color: #8395a7; border-bottom: 1px solid #1e2a3a; padding: 6px 4px; }
+td { padding: 6px 4px; border-bottom: 1px solid #0a0e14; }
+td.pubkey { font-family: monospace; font-size: 0.8em; color: #54a0ff; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+.rarity-common { color: #8395a7; }
+.rarity-rare { color: #54a0ff; }
+.rarity-epic { color: #5f27cd; }
+.rarity-legendary { color: #feca57; }
+.rarity-genesis { color: #ff6b6b; }
+.golden-badge { background: #feca57; color: #0a0e14; padding: 1px 5px; border-radius: 3px; font-size: 0.7em; font-weight: bold; }
+.special-badge { background: #5f27cd; color: #fff; padding: 1px 5px; border-radius: 3px; font-size: 0.7em; }
+.offer-form { background: #0a0e14; padding: 10px; border-radius: 4px; margin-top: 8px; }
+.offer-form input, .offer-form textarea, .offer-form select { background: #111820; border: 1px solid #1e2a3a; color: #c8d6e5; padding: 6px; border-radius: 3px; margin: 2px; font-family: monospace; }
+.offer-form button { background: #5f27cd; color: #fff; border: none; padding: 6px 14px; border-radius: 3px; cursor: pointer; }
+.offer-form button:hover { background: #341f97; }
+.btn { background: #1e2a3a; color: #c8d6e5; border: 1px solid #2e3a4a; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 0.85em; }
+.btn:hover { background: #2e3a4a; }
+.btn-accept { background: #1dd1a1; color: #0a0e14; font-weight: bold; }
+.btn-reject { background: #ff6b6b; color: #fff; }
+.status-pending { color: #feca57; }
+.status-accepted { color: #1dd1a1; }
+.status-rejected { color: #ff6b6b; }
+.status-cancelled { color: #8395a7; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: #111820; border: 1px solid #54a0ff; padding: 10px 20px; border-radius: 6px; max-width: 400px; display: none; }
+#login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0e14; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+#login-box { background: #111820; border: 1px solid #1e2a3a; border-radius: 10px; padding: 30px; max-width: 400px; width: 90%; }
+#login-box h1 { text-align: center; margin-bottom: 20px; }
+#login-box input { width: 100%; background: #0a0e14; border: 1px solid #1e2a3a; color: #c8d6e5; padding: 10px; border-radius: 4px; font-family: monospace; margin-bottom: 10px; }
+#login-box button { width: 100%; background: #5f27cd; color: #fff; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 1em; }
+#login-box .error { color: #ff6b6b; font-size: 0.85em; margin-top: 10px; }
+#content { display: none; }
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div id="login-box">
+    <h1>🔍 AUDITOR ACCESS</h1>
+    <p style="color:#8395a7;font-size:0.85em;margin-bottom:15px;">Введите ваш публичный ключ (pubkey) для входа</p>
+    <input type="text" id="pubkey-input" placeholder="Ваш pubkey (hex)" autocomplete="off">
+    <button onclick="login()">ВОЙТИ</button>
+    <div id="login-error" class="error"></div>
+  </div>
+</div>
+
+<div id="content">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+  <h1>🔍 Auditor Dashboard</h1>
+  <div>
+    <span id="user-pubkey-display" style="color:#54a0ff;font-size:0.8em;font-family:monospace;"></span>
+    <button class="btn" onclick="logout()" style="margin-left:10px;">Выйти</button>
+  </div>
+</div>
+<p style="color:#8395a7;font-size:0.85em;margin-bottom:20px;">
+  Статус: <span id="auditor-status" style="color:#1dd1a1;">✓ Auditor</span> |
+  Топ-9 держателей + первый инвестор = 10 глаз, следящих за казной
+</p>
+
+<div class="card">
+  <h2>📊 Экономика Острова</h2>
+  <div class="stat-row" id="economy-stats">
+    <div class="stat"><div class="label">Резерв</div><div class="value" id="stat-reserve">...</div></div>
+    <div class="stat"><div class="label">Total Supply</div><div class="value" id="stat-supply">...</div></div>
+    <div class="stat"><div class="label">Счетов</div><div class="value" id="stat-accounts">...</div></div>
+    <div class="stat"><div class="label">Активных банкнот</div><div class="value" id="stat-banknotes">...</div></div>
+    <div class="stat"><div class="label">Pre-Mint</div><div class="value" id="stat-premint">...</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>👁 Топ-9 аудиторов</h2>
+  <table><thead><tr><th>#</th><th>Pubkey</th><th>Тип</th><th>Статус</th></tr></thead>
+    <tbody id="auditor-list"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>📦 Держатели банкнот</h2>
+  <p style="color:#8395a7;font-size:0.8em;margin-bottom:10px;">Кликни по банкноте чтобы сделать оффер (предложение о покупке)</p>
+  <div id="holders-list"></div>
+</div>
+
+<div class="card">
+  <h2>💌 Мои P2P офферы</h2>
+  <div id="offers-container">
+    <div id="offers-sent"><h3>📤 Отправленные</h3><table><thead><tr><th>ID</th><th>Кому</th><th>Serial</th><th>Цена ng</th><th>Статус</th></tr></thead><tbody id="offers-sent-body"></tbody></table></div>
+    <div id="offers-received" style="margin-top:15px;"><h3>📥 Полученные</h3><table><thead><tr><th>ID</th><th>От кого</th><th>Serial</th><th>Цена ng</th><th>Сообщение</th><th>Действие</th></tr></thead><tbody id="offers-received-body"></tbody></table></div>
+  </div>
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+let pubkey = '';
+
+function showToast(msg, color) {
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  t.style.borderColor = color || '#54a0ff';
+  t.textContent = msg;
+  setTimeout(() => t.style.display = 'none', 4000);
+}
+
+function login() {
+  const pk = document.getElementById('pubkey-input').value.trim();
+  if (!pk) { document.getElementById('login-error').textContent = 'Введите pubkey'; return; }
+  // проверяем что аудитор
+  fetch('/api/auditor/list').then(r=>r.json()).then(d=>{
+    const isAuditor = d.auditors.some(a => a.pubkey === pk);
+    if (!isAuditor) {
+      document.getElementById('login-error').textContent = 'Этот pubkey не является аудитором';
+      return;
+    }
+    pubkey = pk;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    document.getElementById('user-pubkey-display').textContent = 'pubkey: ' + pubkey;
+    loadAll();
+  }).catch(e => {
+    document.getElementById('login-error').textContent = 'Ошибка соединения с нодой';
+  });
+}
+
+function logout() {
+  pubkey = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('content').style.display = 'none';
+}
+
+function loadAll() {
+  loadEconomy();
+  loadAuditors();
+  loadHolders();
+  loadOffers();
+}
+
+function loadEconomy() {
+  fetch('/api/economy/state').then(r=>r.json()).then(d=>{
+    document.getElementById('stat-reserve').textContent = (d.reserve_ng/1e9).toFixed(1) + ' g';
+    document.getElementById('stat-supply').textContent = (d.total_supply_ng/1e9).toFixed(1) + ' g';
+    document.getElementById('stat-accounts').textContent = d.accounts;
+    document.getElementById('stat-banknotes').textContent = d.banknotes_active;
+    document.getElementById('stat-premint').textContent = d.pre_mint_available;
+  });
+}
+
+function loadAuditors() {
+  fetch('/api/auditor/list').then(r=>r.json()).then(d=>{
+    const tbody = document.getElementById('auditor-list');
+    tbody.innerHTML = d.auditors.map((a,i) => {
+      const isMe = a.pubkey === pubkey;
+      return `<tr><td>${i+1}</td><td class="pubkey">${a.pubkey}${isMe ? ' ← вы' : ''}</td><td>${a.type}</td><td style="color:#1dd1a1;">✓ active</td></tr>`;
+    }).join('');
+  });
+}
+
+function loadHolders() {
+  fetch('/api/p2p/explore?pubkey=' + encodeURIComponent(pubkey)).then(r=>r.json()).then(d=>{
+    const container = document.getElementById('holders-list');
+    if (!d.holders || d.holders.length === 0) {
+      container.innerHTML = '<p style="color:#8395a7;">Пока нет держателей банкнот</p>';
+      return;
+    }
+    container.innerHTML = d.holders.map(h => {
+      const bns = (h.banknotes || []).map(b => {
+        const rarityClass = 'rarity-' + (b.rarity || 'common');
+        const goldenHtml = b.is_golden ? ' <span class="golden-badge">GOLDEN</span>' : '';
+        const specialHtml = b.special ? ' <span class="special-badge">'+b.special+'</span>' : '';
+        return `<span class="${rarityClass}" style="cursor:pointer;text-decoration:underline;margin-right:8px;" onclick='showOfferForm("${h.pubkey}","${b.serial}")'>
+          ${b.serial} (${b.denom_tlr} TLR)${goldenHtml}${specialHtml}</span>`;
+      }).join('');
+      return `<div style="margin-bottom:8px;padding:6px;background:#0a0e14;border-radius:4px;">
+        <div style="color:#54a0ff;font-size:0.8em;font-family:monospace;">${h.pubkey} (liquid: ${(h.liquid_ng/1e9).toFixed(2)} g)</div>
+        <div style="margin-top:3px;font-size:0.85em;">${bns || '<span style="color:#8395a7;">нет банкнот</span>'}</div>
+      </div>`;
+    }).join('');
+  }).catch(e => {
+    document.getElementById('holders-list').innerHTML = '<p style="color:#ff6b6b;">Ошибка загрузки (возможно вы не аудитор)</p>';
+  });
+}
+
+let offerFormVisible = null;
+
+function showOfferForm(toPubkey, serial) {
+  // Remove existing form
+  const existing = document.getElementById('offer-form-active');
+  if (existing) existing.remove();
+
+  const div = document.createElement('div');
+  div.id = 'offer-form-active';
+  div.className = 'offer-form';
+  div.innerHTML = `
+    <strong>Оффер на ${serial}</strong><br>
+    <small>держатель: ${toPubkey.substring(0,16)}...</small><br>
+    <input type="number" id="offer-price" placeholder="Цена в ng" min="1" style="width:150px;">
+    <input type="text" id="offer-msg" placeholder="Сообщение (необяз)" style="width:250px;">
+    <button onclick="sendOffer('${toPubkey}','${serial}')">📨 Отправить оффер</button>
+    <button class="btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  const holderEl = div.parentElement;
+  document.getElementById('holders-list').prepend(div);
+  document.getElementById('offer-price').focus();
+}
+
+function sendOffer(toPubkey, serial) {
+  const price = parseInt(document.getElementById('offer-price').value);
+  const msg = document.getElementById('offer-msg').value || '';
+  if (!price || price <= 0) { showToast('Введите цену больше 0', '#ff6b6b'); return; }
+
+  fetch('/api/p2p/offer', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({from_pubkey: pubkey, to_pubkey: toPubkey, target_serial: serial, price_ng: price, message: msg})
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      showToast('✅ Оффер отправлен! Жди ответа от держателя', '#1dd1a1');
+      const form = document.getElementById('offer-form-active');
+      if (form) form.remove();
+      loadOffers();
+    } else {
+      showToast('❌ ' + (d.error || 'Ошибка'), '#ff6b6b');
+    }
+  }).catch(e => showToast('❌ Ошибка сети', '#ff6b6b'));
+}
+
+function loadOffers() {
+  fetch('/api/p2p/my?pubkey=' + encodeURIComponent(pubkey)).then(r=>r.json()).then(d=>{
+    // Sent
+    const sentBody = document.getElementById('offers-sent-body');
+    if (d.sent && d.sent.length > 0) {
+      sentBody.innerHTML = d.sent.map(o => `<tr>
+        <td style="font-size:0.75em;">${o.offer_id}</td>
+        <td class="pubkey">${o.to_pubkey.substring(0,12)}...</td>
+        <td>${o.target_serial}</td>
+        <td>${o.price_ng.toLocaleString()}</td>
+        <td class="status-${o.status}">${o.status}</td>
+      </tr>`).join('');
+    } else {
+      sentBody.innerHTML = '<tr><td colspan="5" style="color:#8395a7;text-align:center;">Нет отправленных офферов</td></tr>';
+    }
+
+    // Received
+    const recvBody = document.getElementById('offers-received-body');
+    if (d.received && d.received.length > 0) {
+      recvBody.innerHTML = d.received.map(o => `<tr>
+        <td style="font-size:0.75em;">${o.offer_id}</td>
+        <td class="pubkey">${o.from_pubkey.substring(0,12)}...</td>
+        <td>${o.target_serial}</td>
+        <td>${o.price_ng.toLocaleString()}</td>
+        <td style="font-size:0.85em;">${o.message || ''}</td>
+        <td>${o.status === 'pending' ? 
+          `<button class="btn btn-accept" onclick="acceptOffer('${o.offer_id}')">✅</button>
+           <button class="btn btn-reject" onclick="rejectOffer('${o.offer_id}')">✕</button>` 
+          : `<span class="status-${o.status}">${o.status}</span>`}
+        </td>
+      </tr>`).join('');
+    } else {
+      recvBody.innerHTML = '<tr><td colspan="6" style="color:#8395a7;text-align:center;">Нет полученных офферов</td></tr>';
+    }
+  });
+}
+
+function acceptOffer(offerId) {
+  if (!confirm('Принять оффер? Банкнота перейдёт покупателю, ng придёт вам.')) return;
+  fetch('/api/p2p/accept', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({offer_id: offerId, to_pubkey: pubkey})
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      showToast('✅ Сделка состоялась! ng зачислены, банкнота ушла', '#1dd1a1');
+      loadAll();
+    } else {
+      showToast('❌ ' + (d.error || 'Ошибка'), '#ff6b6b');
+    }
+  });
+}
+
+function rejectOffer(offerId) {
+  fetch('/api/p2p/reject', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({offer_id: offerId, to_pubkey: pubkey})
+  }).then(r=>r.json()).then(d=>{
+    if (d.ok) {
+      showToast('Оффер отклонён', '#8395a7');
+      loadAll();
+    }
+  });
+}
+
+// Auto-refresh every 15 seconds
+setInterval(loadAll, 15000);
+</script>
+</body>
+</html>

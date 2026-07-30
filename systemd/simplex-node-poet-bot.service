@@ -1,0 +1,30 @@
+[Unit]
+Description=simplex-node Telegram poet bot (multilingual poetry)
+After=network-online.target
+Wants=network-online.target
+PartOf=simplex-node.target
+
+[Service]
+Type=simple
+User=tomas
+Group=tomas
+WorkingDirectory=/home/tomas/simplex-node
+Environment=HOME=/home/tomas
+Environment=USER=tomas
+ExecStart=/usr/bin/python3 /home/tomas/simplex-node/scripts/poet_bot.py
+Restart=always
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+NoNewPrivileges=true
+ReadWritePaths=/home/tomas
+
+[Install]
+WantedBy=simplex-node.target

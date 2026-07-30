@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"simplex-node/internal/store"
+	"ParanoidX/internal/store"
 )
 
 func ExternalWalletListHandler(ews *store.ExternalWalletStore) http.HandlerFunc {

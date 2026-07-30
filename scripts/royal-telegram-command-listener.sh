@@ -14,7 +14,7 @@ source "$(dirname "$0")/royal-common.sh" 2>/dev/null || true
 : "${CHAT_FILE:=${HOME}/.config/royal-bot.chat}"
 : "${OFFSET_FILE:=${DATA_DIR}/royal_last_update.txt}"
 : "${DATA_DIR:=${HOME}/.local/share/simplex-node}"
-: "${SIMPLEX_SRC:=${HOME}/simplex-node}"
+: "${${PARANOIDX_SRC:-$HOME/ParanoidX}:=${HOME}/simplex-node}"
 : "${SCRIPTS_DIR:=$(dirname "$0")}"
 : "${PLAN_SNAPSHOT:=$(find "${HOME}/.grok/sessions" -path '*%2Fhome%2Ftomas*' -name plan.md 2>/dev/null | head -1 || echo "${HOME}/.grok/sessions/%2Fhome%2Ftomas/019e79fa-9fa5-7c51-a6d2-52d0f52edddb/plan.md")}"
 
@@ -53,7 +53,7 @@ dispatch() {
       local reserve=$(cat "$DATA_DIR/silver_reserve_ng.txt" 2>/dev/null || echo 0)
       local is_royal=$( [ -f "$DATA_DIR/royal.enabled" ] && echo true || echo false )
       local plan_mode=$( [ -f /tmp/royal_plan_mode ] && echo "PLAN" || echo "BUILD" )
-      result="Reserve: $(echo "scale=3; $reserve / 1000000000" | bc)g | Royal: $is_royal | Mode: $plan_mode | Node: $(pgrep -x simplex-node >/dev/null && echo up || echo down)"
+      result="Reserve: $(echo "scale=3; $reserve / 1000000000" | bc)g | Royal: $is_royal | Mode: $plan_mode | Node: $(pgrep -x ParanoidX >/dev/null && echo up || echo down)"
       ;;
     silver|reserve)
       local ng=$(cat "$DATA_DIR/silver_reserve_ng.txt" 2>/dev/null || echo 0)
@@ -70,12 +70,12 @@ dispatch() {
       result="Node launch initiated via launch script."
       ;;
     kill|stop)
-      pkill -x simplex-node 2>/dev/null || true
+      pkill -x ParanoidX 2>/dev/null || true
       result="Node stopped."
       ;;
     backup)
       DATE=$(date +%Y%m%d-%H%M%S)
-      cp -r "$SIMPLEX_SRC" "$SIMPLEX_SRC-A1-$DATE" 2>/dev/null || true
+      cp -r "$${PARANOIDX_SRC:-$HOME/ParanoidX}" "$${PARANOIDX_SRC:-$HOME/ParanoidX}-A1-$DATE" 2>/dev/null || true
       result="A1 backup triggered (see plan for full)."
       ;;
     plan)
@@ -133,11 +133,11 @@ except Exception as e: print("edit err:", e)
       result="Edit processed (see output)"
       ;;
     gobuild|compile|build_bin)
-      (cd "$SIMPLEX_SRC" && go build -o "$BIN" ./cmd/simplex-node) 2>&1 | tail -3
+      (cd "$${PARANOIDX_SRC:-$HOME/ParanoidX}" && go build -o "$BIN" ./cmd/ParanoidX) 2>&1 | tail -3
       result="Build done."
       ;;
     sync_a1)
-      rsync -a --delete "$SIMPLEX_SRC/" "$SIMPLEX_SRC-A1-current/" 2>/dev/null || cp -r "$SIMPLEX_SRC" "$SIMPLEX_SRC-A1-$(date +%s)"
+      rsync -a --delete "$${PARANOIDX_SRC:-$HOME/ParanoidX}/" "$${PARANOIDX_SRC:-$HOME/ParanoidX}-A1-current/" 2>/dev/null || cp -r "$${PARANOIDX_SRC:-$HOME/ParanoidX}" "$${PARANOIDX_SRC:-$HOME/ParanoidX}-A1-$(date +%s)"
       result="Synced to A1 backup."
       ;;
     research*)
@@ -300,7 +300,7 @@ for u in d.get("result", []):
   print(f"New cmd from bot: {text}")
   # execute dispatch in bash (dispatch always does USER: log for full prompt, and --signal triggers the exact step done signal)
   try:
-    listener_path = os.environ.get("LISTENER") or os.environ.get("SCRIPTS_DIR","/home/tomas/simplex-node/scripts") + "/royal-telegram-command-listener.sh"
+    listener_path = os.environ.get("LISTENER") or os.environ.get("SCRIPTS_DIR","/home/tomas/ParanoidX/scripts") + "/royal-telegram-command-listener.sh"
     out = subprocess.check_output([listener_path, "dispatch", "--signal", text], stderr=subprocess.STDOUT, timeout=120).decode()
     print("Executed:", out[:200])
   except Exception as e:
@@ -322,7 +322,7 @@ if [ "$MODE" = "dispatch" ]; then
   if [ "${!#}" = "--signal" ]; then sig=1; cmdargs="${*%% --signal}"; fi
   dispatch "$cmdargs"
   if [ $sig -eq 1 ]; then
-    "$SIGNAL_DONE" "dispatch $cmdargs" "manual signal" 2>/dev/null || /home/tomas/simplex-node/scripts/signal_step_done.sh "dispatch $cmdargs" "manual signal"
+    "$SIGNAL_DONE" "dispatch $cmdargs" "manual signal" 2>/dev/null || /home/tomas/ParanoidX/scripts/signal_step_done.sh "dispatch $cmdargs" "manual signal"
   fi
   exit 0
 fi

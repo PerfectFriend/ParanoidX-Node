@@ -7,8 +7,8 @@
 set -euo pipefail
 source "$(dirname "$0")/royal-common.sh" 2>/dev/null || true
 DATA_BASE="/tmp/royal-test-A1-$$"
-FIXTURE="${1:-${SIMPLEX_SRC:-$HOME/simplex-node}/testdata/royal-fixtures/minimal}"
-NODE_BIN="${BIN:-$HOME/bin/simplex-node}"
+FIXTURE="${1:-${${PARANOIDX_SRC:-$HOME/ParanoidX}:-$HOME/ParanoidX}/testdata/royal-fixtures/minimal}"
+NODE_BIN="${BIN:-$HOME/bin/ParanoidX}"
 CURL="curl -s --max-time 8"
 API="http://127.0.0.1:8080"
 
@@ -28,8 +28,8 @@ else
 fi
 export DATA_DIR="$DATA_BASE"
 
-cp "${SIMPLEX_SRC:-$HOME/simplex-node}/docker/dashboard.html" "$DATA_BASE/dashboard.html" 2>/dev/null || true
-pkill -x simplex-node 2>/dev/null || true
+cp "${${PARANOIDX_SRC:-$HOME/ParanoidX}:-$HOME/ParanoidX}/docker/dashboard.html" "$DATA_BASE/dashboard.html" 2>/dev/null || true
+pkill -x ParanoidX 2>/dev/null || true
 sleep 0.5
 
 echo "Launching test node on 127.0.0.1:18080 (test port to avoid conflict; direct bin for isolation)"
@@ -42,7 +42,7 @@ API="http://127.0.0.1:18080"
 cleanup() {
   pkill -P $TEST_PID 2>/dev/null || true
   kill $TEST_PID 2>/dev/null || true
-  pkill -x simplex-node 2>/dev/null || true
+  pkill -x ParanoidX 2>/dev/null || true
   echo "Cleaned (pid $TEST_PID)"
 }
 trap cleanup EXIT

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/ton"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/ton"
 )
 
 

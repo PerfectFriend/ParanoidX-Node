@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/crypto/bip39"
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
-	"simplex-node/internal/store"
+	"ParanoidX/internal/crypto/bip39"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
+	"ParanoidX/internal/store"
 )
 
 // walletTx records a single wallet transaction (send/receive).

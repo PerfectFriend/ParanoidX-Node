@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"simplex-node/internal/ai"
+	"ParanoidX/internal/ai"
 )
 
 

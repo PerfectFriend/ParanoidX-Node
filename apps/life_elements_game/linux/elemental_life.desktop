@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=Elemental Life
-Comment=Multiplatform desktop Elemental Life cellular automaton game
-Exec=/home/tomas/simplex-node/apps/life_elements_game/build/linux/x64/release/bundle/life_elements_game
-Icon=/home/tomas/simplex-node/apps/life_elements_game/data/elemental-life.svg
-Terminal=false
-Type=Application
-Categories=Game;LogicGame;

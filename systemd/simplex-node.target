@@ -1,0 +1,8 @@
+[Unit]
+Description=simplex-node — Treasure Island full server stack
+Documentation=https://stmaria.org
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Install]
+WantedBy=multi-user.target

@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"simplex-node/internal/vault"
+	"ParanoidX/internal/vault"
 )
 
 type encryptRequest struct {

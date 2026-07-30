@@ -11,13 +11,13 @@ import (
 func ServiceStatus() (smpStatus, xftpStatus string) {
 	smpStatus = "unknown"
 	xftpStatus = "unknown"
-	if b, err := exec.Command("docker", "ps", "--filter", "name=simplex-node-smp-server", "--format", "{{.Status}}").Output(); err == nil {
+	if b, err := exec.Command("docker", "ps", "--filter", "name=ParanoidX-smp-server", "--format", "{{.Status}}").Output(); err == nil {
 		s := strings.TrimSpace(string(b))
 		if s != "" {
 			smpStatus = s
 		}
 	}
-	if b, err := exec.Command("docker", "ps", "--filter", "name=simplex-node-xftp-server", "--format", "{{.Status}}").Output(); err == nil {
+	if b, err := exec.Command("docker", "ps", "--filter", "name=ParanoidX-xftp-server", "--format", "{{.Status}}").Output(); err == nil {
 		s := strings.TrimSpace(string(b))
 		if s != "" {
 			xftpStatus = s

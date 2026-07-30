@@ -1,4 +1,4 @@
-module simplex-node
+module ParanoidX
 
 go 1.25.0
 

@@ -1,0 +1,18 @@
+[Unit]
+Description=simplex-node bridge (SimpleX Chat CLI gateway)
+Documentation=https://stmaria.org
+PartOf=simplex-node.target
+After=simplex-node-dashboard.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tomas
+ExecStart=/home/tomas/bin/simplex-bridge -data /home/tomas/.local/share/simplex-node
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=simplex-node.target

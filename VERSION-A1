@@ -1,0 +1,9 @@
+A3.3 — Cycle 50 (2026-06-11): 10-cycle sprint complete.
+- Cycle 41: Gateway Foundation (internal/gateway/)
+- Cycles 42-44: Multi-platform adapters (WhatsApp, Signal, Matrix, Discord)
+- Cycle 45: BTC Atomic Swaps (internal/crypto/btc)
+- Cycle 46: ETH LayerZero Bridge (internal/crypto/eth)
+- Cycle 47: ICO Testnet vesting tiers + radio enhancements
+- Cycle 48: Vault encryption (AES-GCM server-side)
+- Cycle 49: Wallet send/receive/history API
+- Cycle 50: Integration release — all tests pass, build clean

@@ -1,0 +1,34 @@
+# ParanoidX Tor configuration
+# Persistent hidden services via host bind mounts.
+# DataDirectory is ephemeral (/tmp) -- only keys on host matter.
+
+SocksPort 0
+Log notice stdout
+RunAsDaemon 0
+
+DataDirectory /tmp/tor-data
+
+# These two modes apply to all hidden services (put once to avoid duplicate warnings)
+HiddenServiceSingleHopMode 1
+HiddenServiceNonAnonymousMode 1
+
+# Dashboard (Go server on host via docker gateway)
+HiddenServiceDir /var/lib/tor/dashboard
+HiddenServicePort 80 8080
+
+# SMP (messaging relay)
+HiddenServiceDir /var/lib/tor/smp
+HiddenServicePort 5223 ParanoidX-smp-server:5223
+
+# XFTP (file & media relay)
+HiddenServiceDir /var/lib/tor/xftp
+HiddenServicePort 443 ParanoidX-xftp-server:443
+
+# ICE / TURN server
+HiddenServiceDir /var/lib/tor/ice
+HiddenServicePort 3478 3478
+HiddenServicePort 5349 5349
+
+# Auditor Dashboard
+HiddenServiceDir /var/lib/tor/auditor
+HiddenServicePort 80 8080

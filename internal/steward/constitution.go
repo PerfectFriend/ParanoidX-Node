@@ -1,7 +1,7 @@
 // Package steward implements the Steward AI service
 package steward
 
-import "simplex-node/internal/economy"
+import "ParanoidX/internal/economy"
 
 // ConstitutionRule defines a single parameter bound.
 type ConstitutionRule struct {

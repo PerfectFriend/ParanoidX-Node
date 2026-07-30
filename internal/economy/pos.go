@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // POSInvoiceExpiryMinutes is the default time-to-live for POS invoices.

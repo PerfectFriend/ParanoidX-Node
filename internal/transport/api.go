@@ -12,7 +12,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log/slog"
 
-	"simplex-node/internal/api"
+	"ParanoidX/internal/api"
 )
 
 var upgrader = websocket.Upgrader{

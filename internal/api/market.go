@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
+	"ParanoidX/internal/middleware"
 )
 
 // EscrowRecord represents an escrow transaction between buyer and seller.

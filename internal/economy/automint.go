@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // TreasuryTier represents the state of the treasury based on reserve multiples.

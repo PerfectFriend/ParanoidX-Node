@@ -16,7 +16,7 @@ DESC="${1:-Significant update via bot commands}"
 IS_MAJOR="${2:-minor}"
 
 : "${BASE_DIR:=$HOME}"
-: "${SRC:=$SIMPLEX_SRC}"
+: "${SRC:=$${PARANOIDX_SRC:-$HOME/ParanoidX}}"
 : "${DATA:=$DATA_DIR}"
 : "${PLAN_SNAPSHOT:=$PLAN_SNAPSHOT}"
 : "${LOG:=$DATA/versions.log}"

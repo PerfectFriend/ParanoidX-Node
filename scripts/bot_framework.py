@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bot framework for simplex-node Telegram bots.
+"""Bot framework for ParanoidX Telegram bots.
 
 Provides base infrastructure for polling, command dispatch, AI bridge,
 offset persistence, and error handling. Each bot is a subclass with

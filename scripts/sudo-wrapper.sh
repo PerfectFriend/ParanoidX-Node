@@ -23,7 +23,7 @@ cmd="${1:-help}"
 case "$cmd" in
   kill)
     echo "Stopping all simplex-node and simplex-chat-island processes..."
-    pkill -f "simplex-node -listen" 2>/dev/null || true
+    pkill -f ParanoidX -listen" 2>/dev/null || true
     pkill -f "simplex-chat-island" 2>/dev/null || true
     sleep 1
     echo "Remaining:"
@@ -60,8 +60,8 @@ case "$cmd" in
   rebuild)
     echo "Rebuilding Go binary as $TARGET_USER..."
     if command -v go >/dev/null 2>&1; then
-      su -s /bin/bash -c "cd $SRC_DIR && go build -o $HOME/bin/simplex-node ./cmd/simplex-node" "$TARGET_USER"
-      echo "Build OK: $HOME/bin/simplex-node"
+      su -s /bin/bash -c "cd $SRC_DIR && go build -o $HOME/bin/ParanoidX ./cmd/ParanoidX" "$TARGET_USER"
+      echo "Build OK: $HOME/bin/ParanoidX"
     else
       echo "ERROR: go not found"
       exit 1
@@ -118,7 +118,7 @@ case "$cmd" in
     echo "  kill            - Stop all simplex-node and CLI processes"
     echo "  free-ports      - Kill anything on ports 8080/5223-5226/5230"
     echo "  fix-ownership   - chown data + docker dirs to $TARGET_USER"
-    echo "  rebuild         - go build -o ~/bin/simplex-node ./cmd/simplex-node"
+    echo "  rebuild         - go build -o ~/bin/ParanoidX ./cmd/ParanoidX"
     echo "  restart         - Run launch-node.sh as $TARGET_USER"
     echo "  full-restart    - kill + free-ports + fix-ownership + rebuild + restart"
     echo "  status          - Show processes, ports, and API status"

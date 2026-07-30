@@ -1,10 +1,10 @@
 #!/bin/bash
 # =============================================================================
-# КАНОНИЧЕСКИЙ ЛАУНЧЕР simplex-node
+# КАНОНИЧЕСКИЙ ЛАУНЧЕР ParanoidX
 # ВСЕГДА запускай и перезапускай ноду ТОЛЬКО этой командой:
-#   /home/tomas/simplex-node/scripts/launch-node.sh   (or via bot "launch")
+#   /home/tomas/ParanoidX/scripts/launch-node.sh   (or via bot "launch")
 #
-# ПРЯМОЙ ЗАПУСК бинаря ( ./bin/simplex-node ... или nohup без этого скрипта )
+# ПРЯМОЙ ЗАПУСК бинаря ( ./bin/ParanoidX ... или nohup без этого скрипта )
 # создаёт фоновые задачи, которые система отслеживает и шлёт уведомления
 # "Background task ... completed" в этот чат. Это раздражает и засоряет контекст.
 # Используй ТОЛЬКО этот скрипт — он делает pkill, чистый старт, свежий дашборд.
@@ -33,7 +33,7 @@ XRAY_BIN="/home/tomas/bin/v2ray/xray"
 XRAY_CONFIG="/home/tomas/bin/v2ray/config.json"
 if [ -x "$XRAY_BIN" ] && [ -f "$XRAY_CONFIG" ]; then
   if ! pgrep -x xray >/dev/null 2>&1; then
-    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > /home/tomas/.local/share/simplex-node/logs/xray.log 2>&1 &
+    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > /home/tomas/.local/share/ParanoidX.logs/xray.log 2>&1 &
     echo "xray started (native, PID $!)"
   else
     echo "xray already running (native)"
@@ -50,7 +50,7 @@ fi
 source "$(dirname "$0")/royal-common.sh" 2>/dev/null || true
 : "${DATA:=$DATA_DIR}"
 : "${BIN:=$BIN}"
-: "${SRC_DASH:=$SIMPLEX_SRC/docker/dashboard.html}"
+: "${SRC_DASH:=$${PARANOIDX_SRC:-$HOME/ParanoidX}/docker/dashboard.html}"
 LOG=$DATA/logs/dashboard.log
 
 # Island Royal Services setup (background — non-blocking)
@@ -89,12 +89,12 @@ if [ "$ROOT_AVAIL" -lt 5000 ] || [ "$VAULT_USER_MB" -gt 1950 ] || [ "$DATA_MB" -
 fi
 
 # Aggressive clean: kill by name + any process bound to 8080 (prevents orphans)
-pkill -x simplex-node 2>/dev/null || true
+pkill -x ParanoidX 2>/dev/null || true
 sleep 0.3
 if command -v fuser >/dev/null 2>&1; then
   fuser -k 8080/tcp 2>/dev/null || true
 fi
-pkill -f 'simplex-node -listen' 2>/dev/null || true
+pkill -f ParanoidX -listen' 2>/dev/null || true
 sleep 0.5
 
 # Best-effort refresh of the served dashboard.html so the owner always gets the rich Treasury UI
@@ -110,7 +110,7 @@ if [ -r "$SRC_DASH" ]; then
 fi
 
 # Launch node binary — exec replaces shell, systemd tracks the real PID
-echo "Launching simplex-node (data=$DATA)..."
+echo "Launching ParanoidX (data=$DATA)..."
 echo "Dashboard will be at http://127.0.0.1:8080"
 echo "================================================================"
 exec $BIN -config $DATA/simplex-node.json

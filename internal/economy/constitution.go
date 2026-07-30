@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // Constitution defines the rules for AI Steward decision-making.

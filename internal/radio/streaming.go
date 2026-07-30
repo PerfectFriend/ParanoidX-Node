@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/radio/acestep"
+	"ParanoidX/internal/radio/acestep"
 )
 
 // TrackKind classifies audio by filename prefix.

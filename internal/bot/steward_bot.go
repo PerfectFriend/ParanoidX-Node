@@ -16,13 +16,13 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/ai"
+	"ParanoidX/internal/ai"
 )
 
-const projectKnowledge = `You are AskSteward, the AI Steward of Saint Mary Liberty Island — a sovereign digital nation built on SimpleX protocol with a silver-backed economy running on simplex-node (Go). You answer questions via Telegram.
+const projectKnowledge = `You are AskSteward, the AI Steward of Saint Mary Liberty Island — a sovereign digital nation built on SimpleX protocol with a silver-backed economy running on ParanoidX (Go). You answer questions via Telegram.
 
 ## Project Identity
-- **Project:** simplex-node — Cross-Platform Royal Service Mesh
+- **Project:** ParanoidX — Cross-Platform Royal Service Mesh
 - **Codename:** "The Isle" / "Остров"
 - **Protocol:** SimpleX SMP + XFTP + Tor Onion
 - **Motto:** One contact. All services. Every platform.
@@ -45,9 +45,9 @@ const projectKnowledge = `You are AskSteward, the AI Steward of Saint Mary Liber
 - Banknotes: Common, Rare, Epic, Legendary, Genesis — backed by silver reserve
 
 ## Architecture
-- Single Go binary (cmd/simplex-node) with HTTP server on port 8080
+- Single Go binary (cmd/ParanoidX) with HTTP server on port 8080
 - AI endpoint at /api/ai/chat backed by local Ollama (gemma4:latest) at http://192.168.1.129:11434
-- Data stored as JSON files in ~/.local/share/simplex-node/
+- Data stored as JSON files in ~/.local/share/ParanoidX/
 - Bridge to SimpleX CLI via WebSocket for messaging
 - All state persisted as JSON with atomic writes (.tmp → rename)
 
@@ -79,8 +79,8 @@ const projectKnowledge = `You are AskSteward, the AI Steward of Saint Mary Liber
 1. BACKUP → 2. REWRITE THEPLAN → 3. REPORT TO ADMIN BOT → 4. CHOOSE 1-3 STEPS → 5. BUILD → 6. TEST + DEBUG → 7. CREATE REPORT → 8. CALL ADMIN
 
 ## Files and Locations
-- Main binary: cmd/simplex-node/main.go
-- Config: internal/config/config.go (simplex-node.json)
+- Main binary: cmd/ParanoidX/main.go
+- Config: internal/config/config.go (ParanoidX.json)
 - AI client: internal/ai/ai.go (Ollama HTTP client)
 - AI steward: internal/ai/steward.go (Ask, SuggestTreasury, Moderation, Explain, EconomySummary)
 - Docs: THEPLAN.md, docs/EVOLUTION-PLAN.md, docs/PRODUCTION-CYCLE.md
@@ -427,7 +427,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 		b.sendMessage(chatID, "💰 *Economy*\n\nSelect a category:", EconomyMenuKeyboard())
 
 	case "menu_status":
-		b.sendMessage(chatID, "📊 *Node Status*\n\nThe Isle is running on simplex-node vA2.0.\n• Port: 8080\n• Protocol: SimpleX + Tor\n• Backing: 70% Silver Standard\n• Treasury Commission: 2.28%\n• Max Total Fee: 4.20%", MainMenuKeyboard())
+		b.sendMessage(chatID, "📊 *Node Status*\n\nThe Isle is running on ParanoidX vA2.0.\n• Port: 8080\n• Protocol: SimpleX + Tor\n• Backing: 70% Silver Standard\n• Treasury Commission: 2.28%\n• Max Total Fee: 4.20%", MainMenuKeyboard())
 
 	case "menu_help":
 		help := "📋 *AskSteward Commands*\n\n" +
@@ -534,13 +534,13 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 			"Currently accessible via browser / Tor.", MainMenuKeyboard())
 
 	case "admin_build":
-		b.sendMessage(chatID, "🛠️ *Build Command*\n\nTo build: `go build -o /home/tomas/bin/simplex-node ./cmd/simplex-node/`\nUse via SSH on the node.", AdminMenuKeyboard())
+		b.sendMessage(chatID, "🛠️ *Build Command*\n\nTo build: `go build -o /home/tomas/bin/ParanoidX ./cmd/ParanoidX/`\nUse via SSH on the node.", AdminMenuKeyboard())
 
 	case "admin_restart":
-		b.sendMessage(chatID, "🔄 *Restart Command*\n\nTo restart: `sudo systemctl restart simplex-node-dashboard.service`\nUse via SSH on the node.", AdminMenuKeyboard())
+		b.sendMessage(chatID, "🔄 *Restart Command*\n\nTo restart: `sudo systemctl restart ParanoidX-dashboard.service`\nUse via SSH on the node.", AdminMenuKeyboard())
 
 	case "admin_backup":
-		b.sendMessage(chatID, "💾 *Backup*\n\nBackups at: /home/tomas/A1-backups/cycle-N/\nTo backup: `cp -r simplex-node /home/tomas/A1-backups/cycle-N/`", AdminMenuKeyboard())
+		b.sendMessage(chatID, "💾 *Backup*\n\nBackups at: /home/tomas/A1-backups/cycle-N/\nTo backup: `cp -r ParanoidX /home/tomas/A1-backups/cycle-N/`", AdminMenuKeyboard())
 
 	case "admin_report":
 		b.sendMessage(chatID, "📝 *Report*\n\nSend report: `bash scripts/send-to-inquisitor.sh \"message\"`\nInquisitor bot delivers to admin chat.", AdminMenuKeyboard())
@@ -551,7 +551,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 
 	case "docs_wp_en":
 		b.sendMessage(chatID, "📜 Sending White Paper (English)...", DocsMenuKeyboard())
-		projectDir := filepath.Join(os.Getenv("HOME"), "simplex-node")
+		projectDir := filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		wpPath := filepath.Join(projectDir, "docs", "WHITE-PAPER.md")
 		if err := b.SendDocument(chatID, "WHITE-PAPER.md", wpPath, "Saint Mary Liberty Island — White Paper (English)", DocsMenuKeyboard()); err != nil {
 			slog.Error("send wp en", "error", err)
@@ -560,7 +560,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 
 	case "docs_wp_ru":
 		b.sendMessage(chatID, "📜 Отправляю White Paper (Русский)...", DocsMenuKeyboard())
-		projectDir := filepath.Join(os.Getenv("HOME"), "simplex-node")
+		projectDir := filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		wpPath := filepath.Join(projectDir, "docs", "WHITE-PAPER-RU.md")
 		if err := b.SendDocument(chatID, "WHITE-PAPER-RU.md", wpPath, "Saint Mary Liberty Island — White Paper (Русский)", DocsMenuKeyboard()); err != nil {
 			slog.Error("send wp ru", "error", err)
@@ -569,7 +569,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 
 	case "docs_wp_es":
 		b.sendMessage(chatID, "📜 Enviando White Paper (Español)...", DocsMenuKeyboard())
-		projectDir := filepath.Join(os.Getenv("HOME"), "simplex-node")
+		projectDir := filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		wpPath := filepath.Join(projectDir, "docs", "WHITE-PAPER-ES.md")
 		if err := b.SendDocument(chatID, "WHITE-PAPER-ES.md", wpPath, "Saint Mary Liberty Island — White Paper (Español)", DocsMenuKeyboard()); err != nil {
 			slog.Error("send wp es", "error", err)
@@ -578,7 +578,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 
 	case "docs_theplan":
 		b.sendMessage(chatID, "📋 Sending THEPLAN...", DocsMenuKeyboard())
-		projectDir := filepath.Join(os.Getenv("HOME"), "simplex-node")
+		projectDir := filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		planPath := filepath.Join(projectDir, "THEPLAN.md")
 		if err := b.SendDocument(chatID, "THEPLAN.md", planPath, "THEPLAN — The Isle Master Plan", DocsMenuKeyboard()); err != nil {
 			slog.Error("send theplan", "error", err)
@@ -587,7 +587,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 
 	case "docs_evolution":
 		b.sendMessage(chatID, "📊 Sending Evolution Plan...", DocsMenuKeyboard())
-		projectDir := filepath.Join(os.Getenv("HOME"), "simplex-node")
+		projectDir := filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		evoPath := filepath.Join(projectDir, "docs", "EVOLUTION-PLAN.md")
 		if err := b.SendDocument(chatID, "EVOLUTION-PLAN.md", evoPath, "Comprehensive Evolution Plan", DocsMenuKeyboard()); err != nil {
 			slog.Error("send evolution", "error", err)
@@ -596,7 +596,7 @@ func (b *Bot) handleCallback(cq *CallbackQuery) {
 
 	case "docs_architecture":
 		b.sendMessage(chatID, "🏛️ Sending Architecture...", DocsMenuKeyboard())
-		projectDir := filepath.Join(os.Getenv("HOME"), "simplex-node")
+		projectDir := filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		archPath := filepath.Join(projectDir, "Architecture.md")
 		if err := b.SendDocument(chatID, "Architecture.md", archPath, "Architecture Overview", DocsMenuKeyboard()); err != nil {
 			slog.Error("send architecture", "error", err)

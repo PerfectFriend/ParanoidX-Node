@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARGENTUM — Liquid Taler on TON</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a1a;color:#e0e0e0;max-width:480px;margin:0 auto;padding:16px;min-height:100vh}
+h1{font-size:24px;color:#b8860b;margin:16px 0 8px}
+h2{font-size:18px;color:#c0c0c0;margin:16px 0 8px}
+p{color:#999;font-size:14px;margin-bottom:16px}
+.card{background:#1a1a2e;border-radius:12px;padding:16px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2a2a3e}
+.row:last-child{border-bottom:none}
+.label{color:#888}
+.value{color:#e0e0e0;font-weight:600;font-family:monospace}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;background:#b8860b;color:#fff}
+.btn{display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:16px;cursor:pointer;margin:8px 0;text-align:center;font-weight:600}
+.btn-primary{background:#b8860b;color:#fff}
+.btn-secondary{background:#2a2a3e;color:#e0e0e0}
+.btn-success{background:#4caf50;color:#fff}
+.btn-danger{background:#f44336;color:#fff}
+input{width:100%;padding:10px;border:1px solid #333;border-radius:8px;background:#0a0a1a;color:#e0e0e0;font-size:16px;margin:4px 0}
+select{width:100%;padding:10px;border:1px solid #333;border-radius:8px;background:#0a0a1a;color:#e0e0e0;font-size:16px;margin:4px 0}
+.tab{display:inline-block;padding:8px 16px;cursor:pointer;border-radius:8px 8px 0 0;margin-right:2px;font-size:14px}
+.tab.active{background:#1a1a2e;color:#b8860b}
+.tab.inactive{background:#0a0a1a;color:#666}
+.panel{display:none;background:#1a1a2e;border-radius:0 12px 12px 12px;padding:16px}
+.panel.active{display:block}
+#status{text-align:center;padding:8px;border-radius:8px;margin:8px 0;display:none}
+#status.success{display:block;background:#1b3a1b;color:#4caf50}
+#status.error{display:block;background:#3a1b1b;color:#f44336}
+</style>
+</head>
+<body>
+<h1>🪙 ARGENTUM</h1>
+<p>Silver-backed digital currency on TON • 1 ARGENTUM = 1 ng Liquid Taler</p>
+
+<div class="card" id="rateCard">
+  <h2>Market Rate</h2>
+  <div class="row"><span class="label">Price</span><span class="value" id="ratePrice">—</span></div>
+  <div class="row"><span class="label">Supply</span><span class="value" id="rateSupply">—</span></div>
+  <div class="row"><span class="label">Backing</span><span class="value" id="rateBacking">—</span></div>
+  <div class="row"><span class="label">Status</span><span class="value" id="rateStatus">—</span></div>
+</div>
+
+<div class="tabs" style="margin-top:16px">
+  <span class="tab active" onclick="switchPanel('wallet','wallet')">💼 Wallet</span>
+  <span class="tab inactive" onclick="switchPanel('swap','swap')">🔄 Swap</span>
+  <span class="tab inactive" onclick="switchPanel('market','market')">📊 Market</span>
+</div>
+
+<div id="panel-wallet" class="panel active">
+  <h2>Wallet</h2>
+  <input id="pubkey" placeholder="Enter your pubkey">
+  <button class="btn btn-primary" onclick="checkBalance()">Check Balance</button>
+  <div id="balanceResult"></div>
+</div>
+
+<div id="panel-swap" class="panel">
+  <h2>Swap</h2>
+  <select id="swapFrom">
+    <option value="ton">TON</option>
+    <option value="ng">Liquid Taler (ng)</option>
+  </select>
+  <input id="swapAmount" type="number" placeholder="Amount" min="1000000">
+  <input id="swapPubkey" placeholder="Your pubkey">
+  <button class="btn btn-success" onclick="getQuote()">Get Quote</button>
+  <div id="swapQuote"></div>
+  <button class="btn btn-primary" id="swapBtn" style="display:none" onclick="executeSwap()">Execute Swap</button>
+  <div id="swapResult"></div>
+</div>
+
+<div id="panel-market" class="panel">
+  <h2>Market Stats</h2>
+  <div id="marketData"></div>
+</div>
+
+<div id="status"></div>
+
+<script>
+async function loadRates() {
+  try {
+    const r = await fetch('/api/argentum?action=rate');
+    const d = await r.json();
+    document.getElementById('ratePrice').textContent = '1 TON = ' + (d.ng_per_ton/1e9).toFixed(2) + 'B ng';
+    document.getElementById('rateStatus').textContent = d.symbol + ' | ' + d.status;
+    document.getElementById('rateBacking').textContent = '70% Silver';
+  } catch(e) {
+    document.getElementById('ratePrice').textContent = 'Offline';
+  }
+}
+async function loadMarket() {
+  try {
+    const r = await fetch('/api/argentum?action=market');
+    const d = await r.json();
+    document.getElementById('marketData').innerHTML =
+      '<div class="row"><span class="label">Supply</span><span class="value">'+(d.total_supply_ng/1e9)+'B ng</span></div>'+
+      '<div class="row"><span class="label">Circulating</span><span class="value">'+(d.circulating_ng/1e9)+'B ng</span></div>'+
+      '<div class="row"><span class="label">Backing Ratio</span><span class="value">'+(d.backing_ratio*100)+'% Silver</span></div>'+
+      '<div class="row"><span class="label">Status</span><span class="value">'+d.status+'</span></div>';
+  } catch(e) {
+    document.getElementById('marketData').innerHTML = '<p>Market data unavailable</p>';
+  }
+}
+function switchPanel(name, tabName) {
+  document.querySelectorAll('.panel').forEach(p=>p.className='panel');
+  document.querySelectorAll('.tab').forEach(t=>t.className='tab inactive');
+  document.getElementById('panel-'+tabName).className='panel active';
+  document.querySelector('.tab[onclick*="'+name+'"]').className='tab active';
+}
+async function checkBalance() {
+  const pk = document.getElementById('pubkey').value;
+  if(!pk) return showStatus('Enter a pubkey', 'error');
+  try {
+    const r = await fetch('/api/argentum?action=rate');
+    const d = await r.json();
+    document.getElementById('balanceResult').innerHTML =
+      '<div class="card"><h2>Portfolio</h2>'+
+      '<div class="row"><span class="label">ng Balance</span><span class="value">'+pk.slice(0,8)+'...</span></div>'+
+      '<div class="row"><span class="label">Rate</span><span class="value">1 TON = '+(d.ng_per_ton/1e9).toFixed(2)+'B ng</span></div>'+
+      '</div>';
+    showStatus('Balance loaded', 'success');
+  } catch(e) {
+    showStatus('API error', 'error');
+  }
+}
+let currentQuote = null;
+async function getQuote() {
+  const from = document.getElementById('swapFrom').value;
+  const amount = parseInt(document.getElementById('swapAmount').value);
+  const pk = document.getElementById('swapPubkey').value;
+  if(!amount || amount < 1000000 || !pk) return showStatus('Minimum: 1,000,000 ng', 'error');
+  try {
+    const r = await fetch('/api/argentum?action=swap-quote',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from_asset:from,from_amount:amount,pubkey:pk})});
+    const d = await r.json();
+    currentQuote = d;
+    document.getElementById('swapQuote').innerHTML =
+      '<div class="card">'+
+      '<div class="row"><span class="label">From</span><span class="value">'+(d.from_amount/1e9)+'B '+d.from_asset+'</span></div>'+
+      '<div class="row"><span class="label">To</span><span class="value">'+(d.to_amount/1e9)+'B ARGENTUM</span></div>'+
+      '<div class="row"><span class="label">Fee (0.5%)</span><span class="value">'+(d.fee/1e9)+'B ng</span></div>'+
+      '</div>';
+    document.getElementById('swapBtn').style.display = 'block';
+    showStatus('Quote ready', 'success');
+  } catch(e) {
+    showStatus('Quote failed', 'error');
+  }
+}
+async function executeSwap() {
+  if(!currentQuote) return;
+  try {
+    const r = await fetch('/api/argentum?action=swap',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from_asset:currentQuote.from_asset,from_amount:currentQuote.from_amount,pubkey:currentQuote.user_pubkey})});
+    const d = await r.json();
+    document.getElementById('swapResult').innerHTML =
+      '<div class="card" style="background:#1b3a1b">'+
+      '<h2 style="color:#4caf50">✅ Swap Complete</h2>'+
+      '<div class="row"><span class="label">ID</span><span class="value">'+d.id.slice(0,8)+'...</span></div>'+
+      '<div class="row"><span class="label">Amount</span><span class="value">'+(d.to_amount/1e9)+'B ARGENTUM</span></div>'+
+      '</div>';
+    document.getElementById('swapBtn').style.display = 'none';
+    currentQuote = null;
+    showStatus('Swap completed', 'success');
+  } catch(e) {
+    showStatus('Swap failed', 'error');
+  }
+}
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg;
+  s.className = type;
+  setTimeout(()=>s.className='', 3000);
+}
+loadRates();
+loadMarket();
+</script>
+</body>
+</html>

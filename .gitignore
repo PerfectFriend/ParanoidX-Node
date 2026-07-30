@@ -1,0 +1,72 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.test.exe
+/vendor/
+/go.work
+/go.work.sum
+
+# Go binary
+simplex-node
+banknote-press
+simplex-bridge
+
+# Data dir
+.local/
+.local/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Docker state
+docker/smp_state/
+docker/xftp_state/
+docker/coturn/
+docker/smp_configs/*.key
+docker/smp_configs/*.crt
+docker/smp_configs/*.pem
+docker/smp_configs/ca.srl
+docker/smp_configs/fingerprint
+docker/addresses.json
+
+# Dart/Flutter
+.dart_tool/
+.packages
+.pub/
+build/
+*.lock
+apps/**/.packages
+apps/**/.dart_tool/
+apps/**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Config with secrets
+simplex-node.json
+*.token
+*.chat
+.env
+
+# Backups
+A1-backups/
+
+# Node (opencode-config-backup)
+node_modules/
+opencode-config-backup/
+
+# Sensitive / build-artifacts
+bosskeys.txt
+genkey

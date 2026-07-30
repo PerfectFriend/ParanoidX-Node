@@ -24,9 +24,9 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
+	"ParanoidX/internal/middleware"
 )
 
 // ── Audit Log ─────────────────────────────────────────────────────────────────
@@ -2036,14 +2036,14 @@ func EventsHandler() http.HandlerFunc {
 		}
 
 		// Send initial events immediately
-		sendEvent("system", collectSystemMetrics(startTime))
+		sendEvent("system", CollectSystemMetrics(startTime))
 		sendEvent("docker", dockerStatus())
 		sendEvent("bridge", map[string]any{"connected": BridgeConnected})
 
 		for {
 			select {
 			case <-ticker5s.C:
-				sendEvent("system", collectSystemMetrics(startTime))
+				sendEvent("system", CollectSystemMetrics(startTime))
 			case <-ticker30s.C:
 				sendEvent("docker", dockerStatus())
 				sendEvent("bridge", map[string]any{"connected": BridgeConnected})
@@ -2054,12 +2054,22 @@ func EventsHandler() http.HandlerFunc {
 	}
 }
 
-func collectSystemMetrics(startTime time.Time) map[string]any {
+func CollectSystemMetrics(startTime time.Time) map[string]any {
 	m := runtime.MemStats{}
 	runtime.ReadMemStats(&m)
 
+	uptime := time.Since(startTime).Seconds()
+	ramTotal, ramAvail := readMemInfo()
+	l1, _, _ := readLoadAvg()
+	cpuPct := l1 * 100 / float64(runtime.NumCPU())
+	if cpuPct > 100 {
+		cpuPct = 100
+	}
+
 	metrics := map[string]any{
-		"uptime_seconds": int(time.Since(startTime).Seconds()),
+		"uptime_seconds":   int(uptime),
+		"uptime_human":     fmt.Sprintf("%dh%dm", int(uptime)/3600, int(uptime)%3600/60),
+		"cpu_percent":      cpuPct,
 		"memory": map[string]any{
 			"alloc_mb":       m.Alloc / 1024 / 1024,
 			"total_alloc_mb": m.TotalAlloc / 1024 / 1024,
@@ -2070,6 +2080,15 @@ func collectSystemMetrics(startTime time.Time) map[string]any {
 		"goroutines": runtime.NumGoroutine(),
 		"cpus":       runtime.NumCPU(),
 		"go_version": runtime.Version(),
+	}
+	if ramTotal > 0 {
+		usedPct := float64(ramTotal-ramAvail) / float64(ramTotal) * 100
+		metrics["ram"] = map[string]any{
+			"total_mb":  ramTotal / 1024,
+			"used_mb":   (ramTotal - ramAvail) / 1024,
+			"avail_mb":  ramAvail / 1024,
+			"used_pct":  fmt.Sprintf("%.1f%%", usedPct),
+		}
 	}
 	// Root disk
 	var disk fs

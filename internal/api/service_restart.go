@@ -41,7 +41,7 @@ func ServiceRestartHandler() http.HandlerFunc {
 			writeJSON(w, map[string]any{"status": "ok", "service": "xray"})
 			return
 		}
-		containerName := "simplex-node-" + req.Service
+		containerName := "ParanoidX-" + req.Service
 		cmd := exec.Command("docker", "restart", containerName)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			writeJSON(w, map[string]any{"ok": false, "error": err.Error(), "output": string(out)})
@@ -62,7 +62,7 @@ func ServiceStatusHandler() http.HandlerFunc {
 		}
 		composeDir := os.Getenv("SIMPLEX_SRC")
 		if composeDir == "" {
-			composeDir = filepath.Join(os.Getenv("HOME"), "simplex-node")
+			composeDir = filepath.Join(os.Getenv("HOME"), "ParanoidX")
 		}
 		composeDir = filepath.Join(composeDir, "docker")
 		cmd := exec.Command("docker", "compose", "ps", "--format", "{{.Name}}\t{{.Status}}")

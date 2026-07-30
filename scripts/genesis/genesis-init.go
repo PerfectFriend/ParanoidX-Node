@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/economy"
+	"ParanoidX/internal/economy"
 )
 
 // GenesisConfig — параметры первой эмиссии экономики Острова.

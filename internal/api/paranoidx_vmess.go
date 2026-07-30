@@ -112,7 +112,7 @@ func VMessInitHandler() http.HandlerFunc {
 			return
 		}
 
-		scriptPath := filepath.Join(os.Getenv("HOME"), "simplex-node", "scripts", "setup-vmess.sh")
+		scriptPath := filepath.Join(os.Getenv("HOME"), "ParanoidX", "scripts", "setup-vmess.sh")
 		if _, err := os.Stat(scriptPath); os.IsNotExist(err) {
 			http.Error(w, "setup-vmess.sh not found", http.StatusInternalServerError)
 			return
@@ -156,7 +156,7 @@ func VMessRotateHandler() http.HandlerFunc {
 			return
 		}
 
-		scriptPath := filepath.Join(os.Getenv("HOME"), "simplex-node", "scripts", "setup-vmess.sh")
+		scriptPath := filepath.Join(os.Getenv("HOME"), "ParanoidX", "scripts", "setup-vmess.sh")
 		newUUID := fmt.Sprintf("%s-%s-%s-%s-%s",
 			randHex(8), randHex(4), randHex(4), randHex(4), randHex(12))
 
@@ -259,7 +259,7 @@ func InitVMess(dataDir string) {
 	// Auto-init if not yet initialized
 	if !vmessInitialized {
 		slog.Info("vmess: not initialized, running setup-vmess.sh")
-		scriptPath := filepath.Join(os.Getenv("HOME"), "simplex-node", "scripts", "setup-vmess.sh")
+		scriptPath := filepath.Join(os.Getenv("HOME"), "ParanoidX", "scripts", "setup-vmess.sh")
 		if _, err := os.Stat(scriptPath); err == nil {
 			cmd := exec.Command("bash", scriptPath)
 			if out, err := cmd.CombinedOutput(); err != nil {

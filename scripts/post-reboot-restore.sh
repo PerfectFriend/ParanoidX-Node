@@ -30,7 +30,7 @@ XRAY_BIN="/home/tomas/bin/v2ray/xray"
 XRAY_CONFIG="/home/tomas/bin/v2ray/config.json"
 if [ -x "$XRAY_BIN" ] && [ -f "$XRAY_CONFIG" ]; then
   if ! pgrep -x xray >/dev/null 2>&1; then
-    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > /home/tomas/.local/share/simplex-node/logs/xray.log 2>&1 &
+    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > /home/tomas/.local/share/ParanoidX.logs/xray.log 2>&1 &
     echo "xray started (native)"
   else
     echo "xray already running (native)"
@@ -55,7 +55,7 @@ send_tg() {
   fi
 }
 
-LOG="/home/tomas/.local/share/simplex-node/logs/post-reboot-restore.log"
+LOG="/home/tomas/.local/share/ParanoidX.logs/post-reboot-restore.log"
 mkdir -p "$(dirname "$LOG")"
 exec > >(tee -a "$LOG") 2>&1
 
@@ -65,15 +65,15 @@ send_tg "🔄 Post-reboot restore started at $(date '+%H:%M:%S')"
 # 1) Fix permissions
 echo "[1/10] Fixing permissions..."
 chown -R tomas:tomas /home/tomas/.local/share/simplex-node 2>/dev/null || true
-chown -R tomas:tomas /home/tomas/simplex-node 2>/dev/null || true
-chmod +x /home/tomas/simplex-node/scripts/*.sh /home/tomas/simplex-node/scripts/*.py 2>/dev/null || true
-chmod +x /home/tomas/bin/simplex-node 2>/dev/null || true
+chown -R tomas:tomas /home/tomas/ParanoidX 2>/dev/null || true
+chmod +x /home/tomas/ParanoidX/scripts/*.sh /home/tomas/ParanoidX/scripts/*.py 2>/dev/null || true
+chmod +x /home/tomas/bin/ParanoidX 2>/dev/null || true
 echo "permissions fixed"
 send_tg "✅ Permissions fixed"
 
 # 2) Start docker stack (tor, smp, xftp, coturn — v2ray заменён на нативный xray)
 echo "[2/10] Starting docker stack..."
-cd /home/tomas/simplex-node/docker
+cd /home/tomas/ParanoidX/docker
 if command -v docker >/dev/null 2>&1; then
   if docker compose up -d --build; then
     echo "docker stack started (tor, smp, xftp, coturn)"
@@ -101,16 +101,16 @@ fi
 
 # 4) Start dashboard via launch-node.sh (canonical launcher)
 echo "[4/10] Starting dashboard..."
-if pgrep -x simplex-node >/dev/null 2>&1; then
-  echo "simplex-node already running (PID $(pgrep -x simplex-node))"
+if pgrep -x ParanoidX >/dev/null 2>&1; then
+  echo "simplex-node already running (PID $(pgrep -x ParanoidX))"
   send_tg "✅ Dashboard already running"
 else
   echo "starting simplex-node via launch-node.sh..."
-  if [ -x /home/tomas/simplex-node/scripts/launch-node.sh ]; then
-    bash /home/tomas/simplex-node/scripts/launch-node.sh
+  if [ -x /home/tomas/ParanoidX/scripts/launch-node.sh ]; then
+    bash /home/tomas/ParanoidX/scripts/launch-node.sh
     sleep 4
-    if pgrep -x simplex-node >/dev/null 2>&1; then
-      echo "dashboard UP (PID $(pgrep -x simplex-node))"
+    if pgrep -x ParanoidX >/dev/null 2>&1; then
+      echo "dashboard UP (PID $(pgrep -x ParanoidX))"
       send_tg "✅ Dashboard started via launch-node.sh"
     else
       echo "dashboard DOWN"
@@ -118,19 +118,19 @@ else
     fi
   else
     echo "launch-node.sh missing, starting binary directly..."
-    pkill -x simplex-node 2>/dev/null || true
+    pkill -x ParanoidX 2>/dev/null || true
     sleep 1
-    if [ -x /home/tomas/bin/simplex-node ]; then
-      nohup /home/tomas/bin/simplex-node \
-        >> /home/tomas/.local/share/simplex-node/logs/dashboard.log 2>&1 &
+    if [ -x /home/tomas/bin/ParanoidX ]; then
+      nohup /home/tomas/bin/ParanoidX \
+        >> /home/tomas/.local/share/ParanoidX.logs/dashboard.log 2>&1 &
       echo $! > /tmp/simplex-node.pid
       sleep 4
-      if pgrep -x simplex-node >/dev/null 2>&1; then
+      if pgrep -x ParanoidX >/dev/null 2>&1; then
         echo "dashboard UP (manual)"
   send_tg "✅ Dashboard started on 0.0.0.0:8080"
         else
           echo "dashboard DOWN"
-          send_tg "❌ Dashboard is DOWN (check /tmp/simplex-node.log)"
+          send_tg "❌ Dashboard is DOWN (check /tmp/ParanoidX.log)"
         fi
       else
         echo "simplex-node binary missing"
@@ -147,11 +147,11 @@ if pgrep -f "node-monitor.py" >/dev/null 2>&1; then
   echo "  node-monitor already running (PID $MON_PID)"
   send_tg "✅ node-monitor already running"
 else
-  if [ -f /home/tomas/simplex-node/node-monitor.py ]; then
+  if [ -f /home/tomas/ParanoidX/node-monitor.py ]; then
     GI_TYPELIB_PATH=/home/tomas/.local/share/girepository-1.0
     export GI_TYPELIB_PATH
-    DISPLAY=:0 nohup /usr/bin/python3 /home/tomas/simplex-node/node-monitor.py \
-      > /home/tomas/.local/share/simplex-node/logs/node-monitor.log 2>&1 &
+    DISPLAY=:0 nohup /usr/bin/python3 /home/tomas/ParanoidX/node-monitor.py \
+      > /home/tomas/.local/share/ParanoidX.logs/node-monitor.log 2>&1 &
     echo $! > /tmp/node-monitor.pid
     echo "  node-monitor started (PID $(cat /tmp/node-monitor.pid))"
     send_tg "✅ node-monitor started"
@@ -168,8 +168,8 @@ if [ -n "$FLUTTER_PID" ]; then
   echo "  Flutter already running (PID $FLUTTER_PID)"
   send_tg "✅ Flutter client already running"
 else
-  if [ -f /home/tomas/simplex-node/scripts/run-isle-app.sh ]; then
-    DISPLAY=:0 nohup bash /home/tomas/simplex-node/scripts/run-isle-app.sh \
+  if [ -f /home/tomas/ParanoidX/scripts/run-isle-app.sh ]; then
+    DISPLAY=:0 nohup bash /home/tomas/ParanoidX/scripts/run-isle-app.sh \
       > /tmp/isle_app_supervisor.log 2>&1 &
     echo $! > /tmp/isle-app-supervisor.pid
     echo "  Flutter supervisor started (PID $(cat /tmp/isle-app-supervisor.pid))"
@@ -182,8 +182,8 @@ fi
 
 # 7) Health check
 echo "[7/10] Health check..."
-if pgrep -x simplex-node >/dev/null 2>&1; then
-  echo "  simplex-node running (PID $(pgrep -x simplex-node))"
+if pgrep -x ParanoidX >/dev/null 2>&1; then
+  echo "  simplex-node running (PID $(pgrep -x ParanoidX))"
   HEALTH=$(curl -s --max-time 3 http://127.0.0.1:8080/api/health 2>/dev/null || echo '{"healthy":false}')
   HEALTHY=$(echo "$HEALTH" | python3 -c "import sys,json; print(json.load(sys.stdin).get('healthy',False))" 2>/dev/null)
   if [ "$HEALTHY" = "True" ]; then
@@ -200,9 +200,9 @@ fi
 
 # 8) Quick test
 echo "[8/10] Running quick tests..."
-if pgrep -x simplex-node >/dev/null 2>&1; then
-  if [ -x /home/tomas/simplex-node/scripts/test-royal.sh ]; then
-    TEST_OUT=$(/home/tomas/simplex-node/scripts/test-royal.sh 2>&1 | tail -20 || true)
+if pgrep -x ParanoidX >/dev/null 2>&1; then
+  if [ -x /home/tomas/ParanoidX/scripts/test-royal.sh ]; then
+    TEST_OUT=$(/home/tomas/ParanoidX/scripts/test-royal.sh 2>&1 | tail -20 || true)
     echo "$TEST_OUT"
     if echo "$TEST_OUT" | grep -q "PASS"; then
       send_tg "✅ Quick test: PASS"
@@ -233,7 +233,7 @@ fi
 
 # 10) Send comprehensive startup report to Inquisitor
 echo "[10/10] Sending startup report to Inquisitor..."
-STARTUP_REPORT_SCRIPT="/home/tomas/simplex-node/scripts/startup-report.sh"
+STARTUP_REPORT_SCRIPT="/home/tomas/ParanoidX/scripts/startup-report.sh"
 if [ -x "$STARTUP_REPORT_SCRIPT" ]; then
   bash "$STARTUP_REPORT_SCRIPT" 2>&1 || echo "startup report failed (non-fatal)"
 else

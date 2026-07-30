@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // TagBasePriceNg is the base price of a tag (5M ng = $0.012).

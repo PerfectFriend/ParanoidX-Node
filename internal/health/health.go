@@ -117,7 +117,7 @@ func (m *Monitor) checkDataDirSize() []Check {
 
 func (m *Monitor) checkDocker() []Check {
 	var checks []Check
-	containers := []string{"simplex-node-smp-server", "simplex-node-xftp-server", "simplex-node-tor", "simplex-node-coturn"}
+	containers := []string{"ParanoidX-smp-server", "ParanoidX-xftp-server", "ParanoidX-tor", "ParanoidX-coturn"}
 	for _, name := range containers {
 		c := Check{Name: "docker_" + name}
 		t := time.Now()
@@ -141,15 +141,15 @@ func (m *Monitor) checkDocker() []Check {
 func (m *Monitor) checkXRay() []Check {
 	c := Check{Name: "xray_native"}
 	t := time.Now()
-	conn, err := net.DialTimeout("tcp", "127.0.0.1:10810", 3*time.Second)
+	conn, err := net.DialTimeout("tcp", "127.0.0.1:10812", 3*time.Second)
 	c.Latency = time.Since(t).Round(time.Millisecond).String()
 	if err != nil {
 		c.Status = "fail"
-		c.Detail = "xray not reachable on 127.0.0.1:10810"
+		c.Detail = "xray not reachable on 127.0.0.1:10812"
 	} else {
 		conn.Close()
 		c.Status = "ok"
-		c.Detail = "xray native SOCKS5 on :10810"
+		c.Detail = "xray native VMESS on :10812"
 	}
 	return []Check{c}
 }
@@ -328,7 +328,7 @@ func (m *Monitor) checkTor() []Check {
 	checks = append(checks, cOnion)
 
 	cSMP := Check{Name: "tor_smp_onion"}
-	smpOnion := "/home/tomas/simplex-node/docker/tor/hidden_services/smp/hostname"
+	smpOnion := "/home/tomas/ParanoidX/docker/tor/hidden_services/smp/hostname"
 	if b, err := os.ReadFile(smpOnion); err == nil {
 		cSMP.Status = "ok"
 		cSMP.Detail = strings.TrimSpace(string(b))

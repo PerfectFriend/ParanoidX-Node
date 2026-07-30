@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // ICOTier represents a tier level in the ICO with specific min investment and bonus.

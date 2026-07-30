@@ -11,7 +11,7 @@ import (
 		"path/filepath"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // P2POffer — предложение купить банкноту напрямую у держателя.

@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // LicenseStatus represents the state of a franchise license.

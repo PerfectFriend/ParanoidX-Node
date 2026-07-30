@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build
+        run: go build ./cmd/simplex-node/
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./... -short -count=1 -timeout 30s
+
+      - name: Build banknote-press
+        run: go build ./cmd/banknote-press/
+
+      - name: Build simplex-bridge
+        run: go build ./cmd/simplex-bridge/
+
+      - name: Check formatting
+        run: gofmt -l . | head -20

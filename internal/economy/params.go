@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // DynamicParams holds economy parameters that the Steward can adjust at runtime.

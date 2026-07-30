@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ===== simplex-node USB Restore Script =====
+# ===== ParanoidX USB Restore Script =====
 # Restores codebase + data + binaries from USB backup archive.
 # Usage: bash scripts/restore-from-usb.sh [--from /path/to/backup.tar.gz]
 
@@ -22,11 +22,11 @@ if [ -z "$BACKUP_FILE" ]; then
   for dir in /mnt/simplex-backup /media/*; do
     [ -d "$dir" ] || continue
     while IFS= read -r -d '' f; do CANDIDATES+=("$f"); done \
-      < <(find "$dir" -name "simplex-node-backup-*.tar.gz" -print0 2>/dev/null)
+      < <(find "$dir" -name "ParanoidX-backup-*.tar.gz" -print0 2>/dev/null)
   done
   # Also check local
   while IFS= read -r -d '' f; do CANDIDATES+=("$f"); done \
-    < <(find "$PROJECT_DIR/backups" -name "simplex-node-backup-*.tar.gz" -print0 2>/dev/null)
+    < <(find "$PROJECT_DIR/backups" -name "ParanoidX-backup-*.tar.gz" -print0 2>/dev/null)
 
   if [ ${#CANDIDATES[@]} -eq 0 ]; then
     echo -e "${RED}No backups found. Use --from=/path/to/backup.tar.gz${NC}"
@@ -65,7 +65,7 @@ read -p "Restore? [y/N]: " CONFIRM
 
 # Stop server
 echo -e "${YELLOW}Stopping server...${NC}"
-fuser -k "$HOME/bin/simplex-node" 2>/dev/null || true
+fuser -k "$HOME/bin/ParanoidX" 2>/dev/null || true
 sleep 2
 
 # Extract
@@ -73,13 +73,13 @@ echo -e "${YELLOW}Extracting to $HOME...${NC}"
 tar -xzf "$BACKUP_FILE" -C / 2>/dev/null || { echo -e "${RED}Extract failed${NC}"; exit 1; }
 
 # The backup is structured as:
-# simplex-node-backup/codebase/...
-# simplex-node-backup/data/...
-# simplex-node-backup/bin/...
-# simplex-node-backup/flutter/...
-# simplex-node-backup/config/...
+# ParanoidX-backup/codebase/...
+# ParanoidX-backup/data/...
+# ParanoidX-backup/bin/...
+# ParanoidX-backup/flutter/...
+# ParanoidX-backup/config/...
 
-SRC="/simplex-node-backup"
+SRC="/ParanoidX-backup"
 
 # Restore codebase
 if [ -d "${SRC}/codebase" ]; then
@@ -95,10 +95,10 @@ if [ -d "${SRC}/data" ]; then
 fi
 
 # Restore binary
-if [ -f "${SRC}/bin/simplex-node" ]; then
+if [ -f "${SRC}/bin/ParanoidX" ]; then
   echo -e "${GREEN}Restoring binary...${NC}"
   mkdir -p "$HOME/bin"
-  cp -f "${SRC}/bin/simplex-node" "$HOME/bin/simplex-node" && chmod +x "$HOME/bin/simplex-node"
+  cp -f "${SRC}/bin/ParanoidX" "$HOME/bin/ParanoidX" && chmod +x "$HOME/bin/ParanoidX"
 fi
 
 # Restore Flutter
@@ -116,14 +116,14 @@ if [ -d "${SRC}/config" ]; then
 fi
 
 # Cleanup extracted root
-rm -rf "/simplex-node-backup" 2>/dev/null || true
+rm -rf "/ParanoidX-backup" 2>/dev/null || true
 
 echo -e "\n${GREEN}══════════════════════════════════════════════${NC}"
 echo -e "${GREEN}  Restore complete! Starting server...${NC}"
 echo -e "${GREEN}══════════════════════════════════════════════${NC}"
 
 # Start server
-"$HOME/bin/simplex-node" &>/tmp/simplex-node.log &
+"$HOME/bin/ParanoidX" &>/tmp/ParanoidX.log &
 sleep 5
 VERSION=$(curl -s --max-time 3 http://localhost:8080/api/version 2>/dev/null | grep -oP '"build":"[^"]*"' || echo "check manually")
 echo -e "${CYAN}Server: $VERSION${NC}"

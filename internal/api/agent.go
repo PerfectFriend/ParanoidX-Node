@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/ai"
-	"simplex-node/internal/economy"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/ai"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/middleware"
 )
 
 var ollamaBase = "http://127.0.0.1:11434"

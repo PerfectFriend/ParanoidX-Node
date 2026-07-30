@@ -7,14 +7,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-LOG="$HOME/.local/share/simplex-node/logs/fix.log"
+LOG="$HOME/.local/share/ParanoidX.logs/fix.log"
 mkdir -p "$(dirname "$LOG")"
 API="http://localhost:8080"
 QUIET=false
 [ "${2:-}" = "--quiet" ] && QUIET=true
 
 log()  { echo "[$(date '+%H:%M:%S')] $*" | tee -a "$LOG"; }
-alert(){ local m="$1" u="${2:-normal}"; log "ALERT [$u]: $m"; notify-send --urgency="$u" "simplex-node FIX" "$m" 2>/dev/null||true; }
+alert(){ local m="$1" u="${2:-normal}"; log "ALERT [$u]: $m"; notify-send --urgency="$u" "ParanoidX FIX" "$m" 2>/dev/null||true; }
 q()    { "$@" >/dev/null 2>&1; }
 api()  { curl -sf --max-time 5 "$API$1" 2>/dev/null || echo '{}'; }
 
@@ -48,11 +48,11 @@ do_node() {
   fi
   log "  Node DOWN — restarting"
   alert "Node DOWN — restarting..." "critical"
-  pkill -x simplex-node 2>/dev/null || true
+  pkill -x ParanoidX 2>/dev/null || true
   sleep 1
-  if [ -f "$HOME/bin/simplex-node" ]; then
-    nohup "$HOME/bin/simplex-node" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
-      >> "$HOME/.local/share/simplex-node/logs/dashboard.log" 2>&1 &
+  if [ -f "$HOME/bin/ParanoidX" ]; then
+    nohup "$HOME/bin/ParanoidX" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
+      >> "$HOME/.local/share/ParanoidX.logs/dashboard.log" 2>&1 &
     disown
     sleep 3
   fi
@@ -77,11 +77,11 @@ do_bridge() {
   fi
   log "  Bridge disconnected — restarting node (bridge embedded)"
   alert "Bridge DISCONNECTED — restarting node..." "critical"
-  pkill -x simplex-node 2>/dev/null || true
+  pkill -x ParanoidX 2>/dev/null || true
   sleep 2
-  if [ -f "$HOME/bin/simplex-node" ]; then
-    nohup "$HOME/bin/simplex-node" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
-      >> "$HOME/.local/share/simplex-node/logs/dashboard.log" 2>&1 &
+  if [ -f "$HOME/bin/ParanoidX" ]; then
+    nohup "$HOME/bin/ParanoidX" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
+      >> "$HOME/.local/share/ParanoidX.logs/dashboard.log" 2>&1 &
     disown
     sleep 5
   fi
@@ -125,7 +125,7 @@ do_docker() {
   fi
   log "  $full_name DOWN — restarting"
   alert "$full_name DOWN — restarting..." "critical"
-  local compose_dir="$HOME/simplex-node/docker"
+  local compose_dir="$HOME/ParanoidX/docker"
   if [ -f "$compose_dir/docker-compose.yml" ]; then
     (cd "$compose_dir" && docker-compose restart "$full_name" 2>/dev/null) || \
       (cd "$compose_dir" && docker-compose up -d "$full_name" 2>/dev/null) || true
@@ -152,11 +152,11 @@ do_silver() {
   fi
   log "  Silver oracle silent — restarting node (oracle embedded)"
   alert "Silver oracle DOWN — restarting node..." "warning"
-  pkill -x simplex-node 2>/dev/null || true
+  pkill -x ParanoidX 2>/dev/null || true
   sleep 2
-  if [ -f "$HOME/bin/simplex-node" ]; then
-    nohup "$HOME/bin/simplex-node" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
-      >> "$HOME/.local/share/simplex-node/logs/dashboard.log" 2>&1 &
+  if [ -f "$HOME/bin/ParanoidX" ]; then
+    nohup "$HOME/bin/ParanoidX" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
+      >> "$HOME/.local/share/ParanoidX.logs/dashboard.log" 2>&1 &
     disown
     sleep 5
   fi
@@ -181,11 +181,11 @@ do_radio() {
   fi
   log "  Radio offline — restarting node"
   alert "Radio DOWN — restarting node..." "warning"
-  pkill -x simplex-node 2>/dev/null || true
+  pkill -x ParanoidX 2>/dev/null || true
   sleep 2
-  if [ -f "$HOME/bin/simplex-node" ]; then
-    nohup "$HOME/bin/simplex-node" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
-      >> "$HOME/.local/share/simplex-node/logs/dashboard.log" 2>&1 &
+  if [ -f "$HOME/bin/ParanoidX" ]; then
+    nohup "$HOME/bin/ParanoidX" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
+      >> "$HOME/.local/share/ParanoidX.logs/dashboard.log" 2>&1 &
     disown
     sleep 5
   fi
@@ -212,11 +212,11 @@ do_economy() {
     fi
     log "  Treasury endpoint not responding"
     alert "Treasury DOWN — restarting node..." "warning"
-    pkill -x simplex-node 2>/dev/null || true
+    pkill -x ParanoidX 2>/dev/null || true
     sleep 3
-    if [ -f "$HOME/bin/simplex-node" ]; then
-      nohup "$HOME/bin/simplex-node" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
-        >> "$HOME/.local/share/simplex-node/logs/dashboard.log" 2>&1 &
+    if [ -f "$HOME/bin/ParanoidX" ]; then
+      nohup "$HOME/bin/ParanoidX" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
+        >> "$HOME/.local/share/ParanoidX.logs/dashboard.log" 2>&1 &
       disown
       sleep 5
     fi
@@ -244,11 +244,11 @@ do_chat() {
   fi
   log "  Chat endpoint down — restarting node"
   alert "Chat DOWN — restarting node..." "critical"
-  pkill -x simplex-node 2>/dev/null || true
+  pkill -x ParanoidX 2>/dev/null || true
   sleep 3
-  if [ -f "$HOME/bin/simplex-node" ]; then
-    nohup "$HOME/bin/simplex-node" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
-      >> "$HOME/.local/share/simplex-node/logs/dashboard.log" 2>&1 &
+  if [ -f "$HOME/bin/ParanoidX" ]; then
+    nohup "$HOME/bin/ParanoidX" -config "$HOME/.local/share/simplex-node/simplex-node.json" \
+      >> "$HOME/.local/share/ParanoidX.logs/dashboard.log" 2>&1 &
     disown
     sleep 5
   fi

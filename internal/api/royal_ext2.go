@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
+	"ParanoidX/internal/middleware"
 )
 
 // ── C24: Multi-sig ─────────────────────────────────────────────────────────

@@ -137,7 +137,7 @@ fi
 # ── 10. Dashboard log — bridge messages ──
 echo ""
 echo "─── 10. BRIDGE LOG (recent island events) ───"
-LOG=~/.local/share/simplex-node/logs/dashboard.log
+LOG=~/.local/share/ParanoidX.logs/dashboard.log
 if [ -f "$LOG" ]; then
   BRIDGE_MSGS=$(grep -c "\[island\]" "$LOG" 2>/dev/null || echo 0)
   LAST_CONNECT=$(grep "connected to Island Services" "$LOG" | tail -1 2>/dev/null || echo "(never)")

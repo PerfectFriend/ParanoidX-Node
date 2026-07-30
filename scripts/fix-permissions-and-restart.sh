@@ -1,5 +1,5 @@
 #!/bin/bash
-# simplex-node FIX SCRIPT v2
+# ParanoidX FIX SCRIPT v2
 # Fixes permissions, then rebuilds and restarts as the correct user.
 #
 # Run the WHOLE script as root/sudo:
@@ -15,13 +15,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(dirname "$SCRIPT_DIR")"
 DATA_DIR="${DATA_DIR:-$HOME/.local/share/simplex-node}"
 BIN_DIR="$HOME/bin"
-BIN="$BIN_DIR/simplex-node"
+BIN="$BIN_DIR/ParanoidX"
 
 # Detect target user (the one who should own the files)
 TARGET_USER="${SUDO_USER:-$USER}"
 TARGET_GROUP="${SUDO_GID:-$(id -g "$TARGET_USER")}"
 
-echo "=== simplex-node FIX v2 ==="
+echo "=== ParanoidX FIX v2 ==="
 echo "Running as: $(whoami)"
 echo "Target user: $TARGET_USER"
 echo "Data dir: $DATA_DIR"
@@ -33,10 +33,10 @@ if [ "$(id -u)" -eq 0 ]; then
   echo ""
   echo "[INFO] Running as root. Will drop to $TARGET_USER for build/launch."
   RUN_AS_USER="su -s /bin/bash -c '$SCRIPT_DIR/launch-node.sh' '$TARGET_USER'"
-  BUILD_AS_USER="su -s /bin/bash -c 'cd $SRC_DIR && go build -o $BIN ./cmd/simplex-node' '$TARGET_USER'"
+  BUILD_AS_USER="su -s /bin/bash -c 'cd $SRC_DIR && go build -o $BIN ./cmd/ParanoidX' '$TARGET_USER'"
 else
   RUN_AS_USER="bash $SCRIPT_DIR/launch-node.sh"
-  BUILD_AS_USER="cd $SRC_DIR && go build -o $BIN ./cmd/simplex-node"
+  BUILD_AS_USER="cd $SRC_DIR && go build -o $BIN ./cmd/ParanoidX"
 fi
 
 MODE="${1:-full}"

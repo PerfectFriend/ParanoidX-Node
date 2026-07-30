@@ -1,0 +1,15 @@
+/home/tomas/.local/share/simplex-node/logs/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 640 tomas tomas
+    sharedscripts
+    postrotate
+        systemctl --user reload xray-vmess > /dev/null 2>&1 || true
+        systemctl --user reload xray-vless > /dev/null 2>&1 || true
+        pkill -HUP -x xray 2>/dev/null || true
+    endscript
+}

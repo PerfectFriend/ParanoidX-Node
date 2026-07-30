@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // BanknoteV2 — новая структура банкноты.

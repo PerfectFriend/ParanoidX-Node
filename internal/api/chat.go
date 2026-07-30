@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/middleware"
-	"simplex-node/internal/store"
+	"ParanoidX/internal/middleware"
+	"ParanoidX/internal/store"
 )
 
 // MsgStatus represents the delivery status of a chat message.
@@ -739,6 +739,7 @@ func ChatSendHandler(hub *ChatHub) http.HandlerFunc {
 			return
 		}
 		if !requireContentType(r) {
+			w.WriteHeader(400)
 			writeJSON(w, map[string]any{"ok": false, "error": "Content-Type must be application/json"})
 			return
 		}

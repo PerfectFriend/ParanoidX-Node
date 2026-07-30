@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // Config holds all configuration for the node.

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/middleware"
 )
 
 // DBInfo describes a single database file and its backup count.

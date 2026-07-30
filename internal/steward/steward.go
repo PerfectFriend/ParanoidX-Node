@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/ai"
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/ai"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
 )
 
 // ActionLog records a steward action.

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"simplex-node/internal/lock"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/lock"
+	"ParanoidX/internal/middleware"
 )
 
 func newTestLockService(t *testing.T) *lock.Service {

@@ -13,10 +13,10 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/dc"
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/dc"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
+	"ParanoidX/internal/middleware"
 )
 
 var GlobalDCCloud *dc.Cloud

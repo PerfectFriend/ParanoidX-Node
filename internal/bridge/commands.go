@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"simplex-node/internal/economy"
+	"ParanoidX/internal/economy"
 )
 
 type CommandFunc func(args []string, chatID, dataDir string) string

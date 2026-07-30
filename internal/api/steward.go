@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"simplex-node/internal/steward"
+	"ParanoidX/internal/steward"
 )
 
 // SendGreetingFn is a callback to send a greeting message to a role.

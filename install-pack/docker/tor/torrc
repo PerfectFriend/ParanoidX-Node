@@ -1,0 +1,35 @@
+# simplex-node Tor configuration
+# Persistent hidden services via host bind mounts.
+# DataDirectory is ephemeral (/tmp) — only keys on host matter.
+
+SocksPort 0
+Log notice stdout
+RunAsDaemon 0
+
+DataDirectory /tmp/tor-data
+
+# These two modes apply to all hidden services (put once to avoid duplicate warnings)
+HiddenServiceSingleHopMode 1
+HiddenServiceNonAnonymousMode 1
+
+# Dashboard (Go server on host via host.docker.internal)
+HiddenServiceDir /var/lib/tor/dashboard
+HiddenServicePort 80 host.docker.internal:8080
+
+# SMP (messaging relay)
+HiddenServiceDir /var/lib/tor/smp
+HiddenServicePort 5223 smp-server:5223
+
+# XFTP (file & media relay)
+HiddenServiceDir /var/lib/tor/xftp
+HiddenServicePort 443 xftp-server:443
+
+# ICE / TURN server for WebRTC voice calls (hidden in onion)
+# Clients will connect via Tor to this for relaying voice when P2P not possible.
+HiddenServiceDir /var/lib/tor/ice
+HiddenServicePort 3478 coturn:3478
+HiddenServicePort 5349 coturn:5349
+
+# Auditor Dashboard — отдельный вход для топ-10 аудиторов
+HiddenServiceDir /var/lib/tor/auditor
+HiddenServicePort 80 host.docker.internal:8080

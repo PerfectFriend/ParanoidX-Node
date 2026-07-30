@@ -20,7 +20,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-_SCRIPTS = Path('/home/tomas/simplex-node/scripts')
+_SCRIPTS = Path('/home/tomas/ParanoidX/scripts')
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 

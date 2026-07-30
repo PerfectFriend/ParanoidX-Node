@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // TemplateManager управляет шаблонами банкнот.

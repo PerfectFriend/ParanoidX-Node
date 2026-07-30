@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"simplex-node/internal/ai"
+	"ParanoidX/internal/ai"
 )
 
 type AIContentGenerator struct {

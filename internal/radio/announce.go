@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/store"
+	"ParanoidX/internal/store"
 )
 
 // Announcer identifies who generated the announcement.

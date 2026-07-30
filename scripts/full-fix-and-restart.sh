@@ -1,5 +1,5 @@
 #!/bin/bash
-# simplex-node FULL FIX + RESTART
+# ParanoidX FULL FIX + RESTART
 # Run: sudo bash scripts/full-fix-and-restart.sh
 # Stops root-owned processes, fixes ownership, rebuilds, restarts as tomas.
 
@@ -9,11 +9,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$(dirname "$SCRIPT_DIR")"
 DATA_DIR="${DATA_DIR:-$HOME/.local/share/simplex-node}"
 BIN_DIR="$HOME/bin"
-BIN="$BIN_DIR/simplex-node"
+BIN="$BIN_DIR/ParanoidX"
 TARGET_USER="${SUDO_USER:-tomas}"
 TARGET_GROUP="${SUDO_GID:-$(id -g "$TARGET_USER")}"
 
-echo "=== simplex-node FULL FIX ==="
+echo "=== ParanoidX FULL FIX ==="
 echo "Running as root, will drop to $TARGET_USER for build/launch."
 echo "Data: $DATA_DIR"
 echo "Src:   $SRC_DIR"
@@ -21,7 +21,7 @@ echo "Src:   $SRC_DIR"
 # 1. Stop root-owned node and CLI
 echo ""
 echo "[1/6] Stopping root-owned processes..."
-pkill -f "simplex-node -listen" 2>/dev/null || true
+pkill -f ParanoidX -listen" 2>/dev/null || true
 pkill -f "simplex-chat-island" 2>/dev/null || true
 sleep 1
 pgrep -a -f simplex-node 2>/dev/null && echo "WARN: simplex-node still running" || echo "Node stopped."
@@ -54,7 +54,7 @@ echo "Directories ready."
 echo ""
 echo "[5/6] Rebuilding Go binary..."
 if command -v go >/dev/null 2>&1; then
-  su -s /bin/bash -c "cd $SRC_DIR && go build -o $BIN ./cmd/simplex-node" "$TARGET_USER"
+  su -s /bin/bash -c "cd $SRC_DIR && go build -o $BIN ./cmd/ParanoidX" "$TARGET_USER"
   echo "Build OK: $BIN"
 else
   echo "ERROR: go not found"

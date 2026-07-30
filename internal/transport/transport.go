@@ -15,7 +15,7 @@ import (
 
 	"log/slog"
 
-	"simplex-node/internal/api"
+	"ParanoidX/internal/api"
 )
 
 // AuditEntry represents a single audit log entry.

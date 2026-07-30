@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/store"
+	"ParanoidX/internal/store"
 )
 
 // Language code

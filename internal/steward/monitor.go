@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/economy"
+	"ParanoidX/internal/economy"
 )
 
 // StewardMetrics holds all collected economy metrics.

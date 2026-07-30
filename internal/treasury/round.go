@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/fileutil"
 )
 
 const (

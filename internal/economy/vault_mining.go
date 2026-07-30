@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/fileutil"
+	"ParanoidX/internal/fileutil"
 )
 
 // VaultMining — майнинг из подписок, не из инфляции.

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"simplex-node/internal/crypto/btc"
+	"ParanoidX/internal/crypto/btc"
 )
 
 var swapRegistry = btc.NewRegistry()

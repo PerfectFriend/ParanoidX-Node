@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/radio"
-	"simplex-node/internal/radio/acestep"
+	"ParanoidX/internal/radio"
+	"ParanoidX/internal/radio/acestep"
 )
 
 // formulaPlaylistJSON returns a JSON-serializable formula playlist.

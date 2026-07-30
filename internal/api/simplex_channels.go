@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/middleware"
 )
 
 // ── DID Key Manager ─────────────────────────────────────────────────────────

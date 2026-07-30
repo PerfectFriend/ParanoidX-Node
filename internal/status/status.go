@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/dockerutil"
+	"ParanoidX/internal/dockerutil"
 )
 
 
@@ -27,17 +27,17 @@ func Collect(dataDir, vaultPath string, startTime time.Time) map[string]any {
 
 	smpStatus, xftpStatus := dockerutil.ServiceStatus()
 	info["smp"] = map[string]any{
-		"fingerprint": readTrim(filepath.Join("/home/tomas/simplex-node/docker/smp_configs/fingerprint")),
+		"fingerprint": readTrim(filepath.Join("/home/tomas/ParanoidX/docker/smp_configs/fingerprint")),
 		"status":      smpStatus,
 	}
 	info["xftp"] = map[string]any{
-		"fingerprint": readTrim(filepath.Join("/home/tomas/simplex-node/docker/xftp_configs/fingerprint")),
+		"fingerprint": readTrim(filepath.Join("/home/tomas/ParanoidX/docker/xftp_configs/fingerprint")),
 		"status":      xftpStatus,
 	}
 
 	info["storage"] = map[string]any{
-		"smp_state":  dirSizeMBFast(filepath.Join("/home/tomas/simplex-node/docker/smp_state")),
-		"xftp_state": dirSizeMBFast(filepath.Join("/home/tomas/simplex-node/docker/xftp_state")),
+		"smp_state":  dirSizeMBFast(filepath.Join("/home/tomas/ParanoidX/docker/smp_state")),
+		"xftp_state": dirSizeMBFast(filepath.Join("/home/tomas/ParanoidX/docker/xftp_state")),
 	}
 
 	info["vault"] = map[string]any{
@@ -144,8 +144,8 @@ func getDiskMetrics() map[string]any {
 	}
 	df("/", "root")
 	df("/home/tomas/.local/share/simplex-node", "data")
-	df("/home/tomas/simplex-node/docker/smp_state", "smp_state")
-	df("/home/tomas/simplex-node/docker/xftp_state", "xftp_state")
+	df("/home/tomas/ParanoidX/docker/smp_state", "smp_state")
+	df("/home/tomas/ParanoidX/docker/xftp_state", "xftp_state")
 
 	if out, err := exec.Command("docker", "system", "df", "--format", "{{.Type}}\t{{.Size}}\t{{.Reclaimable}}").Output(); err == nil {
 		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {

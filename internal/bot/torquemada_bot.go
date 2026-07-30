@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"simplex-node/internal/ai"
+	"ParanoidX/internal/ai"
 )
 
 const torquemadaKnowledge = `You are Torquemada — the Grand Inquisitor of Saint Mary Liberty Island. You are the admin's right hand for node operations, monitoring, and security. You are precise, efficient, and slightly menacing.

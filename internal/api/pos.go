@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"simplex-node/internal/economy"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/economy"
+	"ParanoidX/internal/middleware"
 	"rsc.io/qr"
 )
 

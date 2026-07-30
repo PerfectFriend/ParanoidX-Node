@@ -1,0 +1,38 @@
+═══════════════════════════════════════════════════════════════════════════════
+  ParanoidX — ГОТОВЫЕ АДРЕСА ДЛЯ КЛИЕНТА
+  Создано: 2026-07-30 (после переименования simplex-node → ParanoidX)
+═══════════════════════════════════════════════════════════════════════════════
+
+SMP (сообщения):
+  smp://xlxM8uqJQZgu45bi2OSDokYilqEP8RGBeBb48f0UvTY=@7czed3rxeryz4zxlo7wiwgz36yfmdwvu6ylv5wkby3trei3qsuw4lnqd.onion:5223
+
+XFTP (файлы и медиа):
+  xftp://IROP-a...TcI=@fv3pfzxih5sjf33jmusfbskmd2i3lywaaaysh6tijc7df7k6sijq3yyd.onion:443
+
+───────────────────────────────────────────────────────────────────────────────
+📞 ГОЛОСОВЫЕ И ВИДЕО ЗВОНКИ (WebRTC через скрытый TURN)
+  ICE/TURN onion: rigx5uuqk5bgvcikjfbtqenw5qn3fra34nkynrrrfp2sijophhqu4pqd.onion
+
+  НАСТРОЙКА В КЛИЕНТЕ SimpleX (обязательно для реальных звонков):
+    1. Настройки → Аудио и видео звонки → WebRTC ICE серверы
+    2. Включи тумблер «Настроить ICE серверы»
+    3. Вставь строки (по одной). Бери СВЕЖИЕ из дашборда:
+         http://127.0.0.1:8080   или через dashboard onion
+
+───────────────────────────────────────────────────────────────────────────────
+📋 Onion адреса сервисов ParanoidX:
+  Dashboard:  http://q273p7coau3uvzeddexvdgv6andorfzvplstztheso2qcsj4yqvfzzad.onion
+  SMP:        smp://...@7czed3rxeryz4zxlo7wiwgz36yfmdwvu6ylv5wkby3trei3qsuw4lnqd.onion:5223
+  XFTP:       xftp://...@fv3pfzxih5sjf33jmusfbskmd2i3lywaaaysh6tijc7df7k6sijq3yyd.onion:443
+  ICE/TURN:   rigx5uuqk5bgvcikjfbtqenw5qn3fra34nkynrrrfp2sijophhqu4pqd.onion
+
+───────────────────────────────────────────────────────────────────────────────
+⚙️  Для подключения через SimpleX клиент:
+  1. Открыть SimpleX → "Connect via link"
+  2. Вставить контактную ссылку (контакты уже сохранены на ноде)
+
+  Или через веб-дашборд:
+  http://127.0.0.1:8080   (локально)
+  http://q273p7coau3uvzeddexvdgv6andorfzvplstztheso2qcsj4yqvfzzad.onion  (через Tor)
+
+═══════════════════════════════════════════════════════════════════════════════

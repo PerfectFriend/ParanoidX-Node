@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"simplex-node/internal/store"
+	"ParanoidX/internal/store"
 )
 
 func TokenListHandler(ts *store.TokenStore) http.HandlerFunc {

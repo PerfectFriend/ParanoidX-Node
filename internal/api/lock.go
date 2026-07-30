@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"simplex-node/internal/lock"
-	"simplex-node/internal/middleware"
+	"ParanoidX/internal/lock"
+	"ParanoidX/internal/middleware"
 )
 
 type unlockLimiter interface {

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"simplex-node/internal/container"
-	"simplex-node/internal/crypto/bip39"
+	"ParanoidX/internal/container"
+	"ParanoidX/internal/crypto/bip39"
 
 	"log/slog"
 )
@@ -170,12 +170,12 @@ func ContainerImportConfigHandler() http.HandlerFunc {
 		imported := map[string]string{}
 
 		// 1. Main config: simplex-node.json
-		cfgPath := filepath.Join(DataDir, "simplex-node.json")
+		cfgPath := filepath.Join(DataDir, "ParanoidX.json")
 		if data, err := os.ReadFile(cfgPath); err == nil {
 			if err := GlobalContainer.Store(EntryConfigJSON, data); err != nil {
 				slog.Error("container import config", "error", err)
 			} else {
-				imported["config.json"] = "simplex-node.json"
+				imported["config.json"] = "ParanoidX.json"
 			}
 		}
 
@@ -271,7 +271,7 @@ func ContainerRestoreHandler() http.HandlerFunc {
 
 		// 1. Restore main config
 		if data, err := GlobalContainer.Load(EntryConfigJSON); err == nil {
-			cfgPath := filepath.Join(DataDir, "simplex-node.json")
+			cfgPath := filepath.Join(DataDir, "ParanoidX.json")
 			if err := os.WriteFile(cfgPath, data, 0600); err == nil {
 				restored = append(restored, "config.json -> simplex-node.json")
 			}

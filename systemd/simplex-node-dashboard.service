@@ -1,0 +1,30 @@
+[Unit]
+Description=simplex-node dashboard (Go HTTP server on :8080)
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+PartOf=simplex-node.target
+
+[Service]
+Type=simple
+User=tomas
+Group=tomas
+WorkingDirectory=/home/tomas/simplex-node
+Environment=HOME=/home/tomas
+Environment=USER=tomas
+ExecStartPre=/bin/bash -c 'pkill -x simplex-node 2>/dev/null; fuser -k 8080/tcp 2>/dev/null; exit 0'
+ExecStartPre=/bin/cp -f /home/tomas/simplex-node/docker/dashboard.html /home/tomas/.local/share/simplex-node/dashboard.html
+ExecStart=/home/tomas/bin/simplex-node -listen 0.0.0.0:8080 -data /home/tomas/.local/share/simplex-node
+Restart=always
+RestartSec=5
+
+StandardOutput=journal
+StandardError=journal
+
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+NoNewPrivileges=true
+ReadWritePaths=/home/tomas
+
+[Install]
+WantedBy=simplex-node.target

@@ -7,7 +7,7 @@
 # После установки opencode подключается к нему через Tailscale по LAN.
 #
 # Использование:
-#   curl -fsSL https://raw.githubusercontent.com/PerfectFriend/simplex-node/main/scripts/setup-macbook-ai.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/PerfectFriend/ParanoidX/main/scripts/setup-macbook-ai.sh | bash
 #   # или скопировать на макбук и запустить:
 #   chmod +x setup-macbook-ai.sh && ./setup-macbook-ai.sh
 # ============================================================================
