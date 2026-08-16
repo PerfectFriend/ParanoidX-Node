@@ -5,6 +5,7 @@
   "inbounds": [
     {
       "port": 10808,
+      "listen": "0.0.0.0",
       "protocol": "socks",
       "settings": {
         "auth": "noauth",
@@ -14,10 +15,12 @@
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls", "quic"]
-      }
+      },
+      "tag": "socks-in"
     },
     {
       "port": 10809,
+      "listen": "0.0.0.0",
       "protocol": "http",
       "settings": {
         "timeout": 0
@@ -25,13 +28,167 @@
       "sniffing": {
         "enabled": true,
         "destOverride": ["http", "tls", "quic"]
-      }
+      },
+      "tag": "http-in"
+    },
+    {
+      "port": 10810,
+      "listen": "0.0.0.0",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "0a7a1204-5450-4541-bbf9-54b3a3de6c51",
+            "flow": "xtls-rprx-vision",
+            "level": 0,
+            "email": "paranoidx-vless@stmaria.org"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.cloudflare.com:443",
+          "xver": 0,
+          "serverNames": ["www.cloudflare.com"],
+          "privateKey": "-DMH4aSevNhVWXEonqKbMN9eN6Pw5AKFBAK51ilMgFY",
+          "shortIds": ["", "5402094c83d29a81"]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vless-reality-in"
+    },
+    {
+      "port": 10811,
+      "listen": "0.0.0.0",
+      "protocol": "vmess",
+      "settings": {
+        "clients": [
+          {
+            "id": "0a7a1204-5450-4541-bbf9-54b3a3de6c51",
+            "alterId": 0,
+            "security": "auto",
+            "level": 0,
+            "email": "paranoidx-vmess@stmaria.org"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/paranoidx-vmess",
+          "headers": {
+            "Host": "stmaria.org"
+          }
+        },
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/etc/xray/certs/vmess.crt",
+              "keyFile": "/etc/xray/certs/vmess.key"
+            }
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "vmess-ws-tls-in"
+    },
+    {
+      "port": 10812,
+      "listen": "0.0.0.0",
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          {
+            "password": "0sAHq+7m8JIyHQ1M1Y8x6OvboeMXwsg0",
+            "level": 0,
+            "email": "paranoidx-trojan@stmaria.org"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/etc/xray/certs/trojan.crt",
+              "keyFile": "/etc/xray/certs/trojan.key"
+            }
+          ]
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic"]
+      },
+      "tag": "trojan-tls-in"
+    },
+    {
+      "port": 10813,
+      "listen": "0.0.0.0",
+      "protocol": "shadowsocks",
+      "settings": {
+        "method": "2022-blake3-aes-128-gcm",
+        "password": "OQVr7QG2e0bXuo1qBp8NZKYat2TTm0YL6UnzX6UEkQ8=",
+        "network": "tcp,udp"
+      },
+      "tag": "shadowsocks-in"
     }
   ],
   "outbounds": [
     {
       "protocol": "freedom",
       "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    },
+    {
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "127.0.0.1",
+            "port": 9050
+          }
+        ]
+      },
+      "tag": "tor-out"
     }
-  ]
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": ["socks-in", "http-in", "vless-reality-in", "vmess-ws-tls-in", "trojan-tls-in", "shadowsocks-in"],
+        "outboundTag": "direct"
+      },
+      {
+        "type": "field",
+        "domain": ["geosite:category-ads-all"],
+        "outboundTag": "block"
+      }
+    ]
+  },
+  "dns": {
+    "servers": [
+      "https://1.1.1.1/dns-query",
+      "https://8.8.8.8/dns-query",
+      "localhost"
+    ],
+    "tag": "dns-out"
+  }
 }

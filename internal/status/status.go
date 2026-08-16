@@ -46,7 +46,7 @@ func Collect(dataDir, vaultPath string, startTime time.Time) map[string]any {
 		"file_count": getVaultFileCount(vaultPath),
 	}
 
-	info["disk"] = getDiskMetrics()
+	info["disk"] = getDiskMetrics(dataDir)
 
 	info["is_royal"] = isRoyalNode(dataDir)
 
@@ -108,7 +108,7 @@ func getVaultFileCount(vaultPath string) int {
 	return count
 }
 
-func getDiskMetrics() map[string]any {
+func getDiskMetrics(dataDir string) map[string]any {
 	res := map[string]any{}
 	df := func(path, label string) {
 		out, err := exec.Command("df", "-B1", path).Output()
@@ -143,9 +143,9 @@ func getDiskMetrics() map[string]any {
 		}
 	}
 	df("/", "root")
-	df("/home/tomas/.local/share/simplex-node", "data")
-	df("/home/tomas/ParanoidX/docker/smp_state", "smp_state")
-	df("/home/tomas/ParanoidX/docker/xftp_state", "xftp_state")
+	df(dataDir, "data")
+	df(filepath.Join(dataDir, "..", "..", "..", "ParanoidX", "docker", "smp_state"), "smp_state")
+	df(filepath.Join(dataDir, "..", "..", "..", "ParanoidX", "docker", "xftp_state"), "xftp_state")
 
 	if out, err := exec.Command("docker", "system", "df", "--format", "{{.Type}}\t{{.Size}}\t{{.Reclaimable}}").Output(); err == nil {
 		for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
@@ -239,7 +239,8 @@ func getTier(scoreIf any) string {
 
 // CheckDiskAndAlert handles the CheckDiskAndAlert HTTP request.
 func CheckDiskAndAlert() map[string]any {
-	metrics := getDiskMetrics()
+	home, _ := os.UserHomeDir()
+	metrics := getDiskMetrics(filepath.Join(home, ".local/share/paranoidx"))
 	var alerts []string
 	for k, v := range metrics {
 		if m, ok := v.(map[string]any); ok {

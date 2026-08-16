@@ -19,14 +19,8 @@ touch -t "$(date -d '+30 minutes' '+%Y%m%d%H%M.%S')" "$DATA_DIR/.maintenance" 2>
 export NO_PROXY="localhost,127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.local,.onion,api.telegram.org"
 export no_proxy="$NO_PROXY"
 
-# Радио на USB — создаём symlink если его нет
-USB_RADIO="/run/media/tomas/SIMPLEX-USB/radio"
-LOCAL_RADIO="/home/tomas/.local/share/simplex-node/radio"
-if [ -d "$USB_RADIO" ] && [ ! -L "$LOCAL_RADIO" ]; then
-  [ -d "$LOCAL_RADIO" ] && mv "$LOCAL_RADIO" "${LOCAL_RADIO}.bak" 2>/dev/null
-  ln -sf "$USB_RADIO" "$LOCAL_RADIO"
-  echo "Radio symlinked to USB: $USB_RADIO"
-fi
+# Радио на SSD /mnt/data (USB — только бэкапы)
+# (ранее: symlink на USB — убрано, radio на /mnt/data/media/radio)
 
 # Нативный xray вместо Docker V2Ray
 XRAY_BIN="/home/tomas/bin/v2ray/xray"
@@ -94,7 +88,7 @@ sleep 0.3
 if command -v fuser >/dev/null 2>&1; then
   fuser -k 8080/tcp 2>/dev/null || true
 fi
-pkill -f ParanoidX -listen' 2>/dev/null || true
+pkill -f 'ParanoidX -listen' 2>/dev/null || true
 sleep 0.5
 
 # Best-effort refresh of the served dashboard.html so the owner always gets the rich Treasury UI

@@ -10,7 +10,7 @@ services:
       - ./smp_configs:/etc/opt/simplex
       - ./smp_state:/var/opt/simplex
     ports:
-      - "5223:5223"
+      - "127.0.0.1:5223:5223"
       - "127.0.0.1:5224:5224"
     restart: unless-stopped
     depends_on:
@@ -32,7 +32,7 @@ services:
       - ./xftp_configs:/etc/opt/simplex-xftp
       - ./xftp_state:/srv/xftp
     ports:
-      - "5225:443"
+      - "127.0.0.1:5225:443"
       - "127.0.0.1:5226:5226"
     restart: unless-stopped
     depends_on:

@@ -16,14 +16,8 @@ set -euo pipefail
 export NO_PROXY="localhost,127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.local,.onion,api.telegram.org"
 export no_proxy="$NO_PROXY"
 
-# Радио на USB — symlink если USB подключён
-USB_RADIO="/run/media/tomas/SIMPLEX-USB/radio"
-LOCAL_RADIO="/home/tomas/.local/share/simplex-node/radio"
-if [ -d "$USB_RADIO" ] && [ ! -L "$LOCAL_RADIO" ]; then
-  [ -d "$LOCAL_RADIO" ] && mv "$LOCAL_RADIO" "${LOCAL_RADIO}.bak" 2>/dev/null
-  ln -sf "$USB_RADIO" "$LOCAL_RADIO"
-  echo "Radio symlinked to USB: $USB_RADIO"
-fi
+# Радио на SSD /mnt/data (USB — только бэкапы)
+# (ранее: symlink на /run/media/tomas/SIMPLEX-USB/radio — убрано, radio на /mnt/data/media/radio)
 
 # Нативный xray вместо Docker V2Ray
 XRAY_BIN="/home/tomas/bin/v2ray/xray"
@@ -138,7 +132,6 @@ else
       fi
     fi
   fi
-fi
 
 # 5) Start node-monitor (system tray — Wayland-indicator via AyatanaAppIndicator3)
 echo "[5/10] Starting node-monitor..."
@@ -150,7 +143,10 @@ else
   if [ -f /home/tomas/ParanoidX/node-monitor.py ]; then
     GI_TYPELIB_PATH=/home/tomas/.local/share/girepository-1.0
     export GI_TYPELIB_PATH
-    DISPLAY=:0 nohup /usr/bin/python3 /home/tomas/ParanoidX/node-monitor.py \
+    # Unset proxy vars: urllib cannot speak socks5 (Tor), so the monitor
+    # would go blind and spam restart alerts. Local API must be direct.
+    env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy \
+      -u PYTHONPATH DISPLAY=:0 nohup /usr/bin/python3 /home/tomas/ParanoidX/node-monitor.py \
       > /home/tomas/.local/share/ParanoidX.logs/node-monitor.log 2>&1 &
     echo $! > /tmp/node-monitor.pid
     echo "  node-monitor started (PID $(cat /tmp/node-monitor.pid))"

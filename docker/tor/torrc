@@ -12,9 +12,9 @@ DataDirectory /tmp/tor-data
 HiddenServiceSingleHopMode 1
 HiddenServiceNonAnonymousMode 1
 
-# Dashboard (Go server on host via docker gateway)
+# Dashboard (Go server on host via docker gateway — host.docker.internal)
 HiddenServiceDir /var/lib/tor/dashboard
-HiddenServicePort 80 8080
+HiddenServicePort 80 host.docker.internal:8080
 
 # SMP (messaging relay)
 HiddenServiceDir /var/lib/tor/smp
@@ -26,9 +26,9 @@ HiddenServicePort 443 ParanoidX-xftp-server:443
 
 # ICE / TURN server
 HiddenServiceDir /var/lib/tor/ice
-HiddenServicePort 3478 3478
-HiddenServicePort 5349 5349
+HiddenServicePort 3478 ParanoidX-coturn:3478
+HiddenServicePort 5349 ParanoidX-coturn:5349
 
-# Auditor Dashboard
+# Auditor Dashboard (same Go server, /auditor path)
 HiddenServiceDir /var/lib/tor/auditor
-HiddenServicePort 80 8080
+HiddenServicePort 80 host.docker.internal:8080

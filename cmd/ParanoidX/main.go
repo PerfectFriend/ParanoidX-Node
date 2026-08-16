@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -203,14 +204,14 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})))
 
 	listen := flag.String("listen", "0.0.0.0:8080", "listen address")
-	dataDir := flag.String("data", filepath.Join(os.Getenv("HOME"), ".local/share/simplex-node"), "data dir")
+	dataDir := flag.String("data", filepath.Join(os.Getenv("HOME"), ".local/share/paranoidx"), "data dir")
 	cfgPath := flag.String("config", "", "path to config file (overrides -listen and -data)")
 	flag.Parse()
 
 	// Load optional config file
 	cfg := config.DefaultConfig()
 	if *cfgPath == "" {
-		defaultCfgPath := filepath.Join(*dataDir, "simplex-node.json")
+		defaultCfgPath := filepath.Join(*dataDir, "paranoidx.json")
 		if _, err := os.Stat(defaultCfgPath); err == nil {
 			*cfgPath = defaultCfgPath
 		}
@@ -1165,7 +1166,7 @@ load();setInterval(load,10000);
 		script := `#!/bin/sh
 set -e
 ` + cdCmd + `
-BACKUP_BASE="/home/tomas/.local/share/simplex-node/tor-keys-backup"
+BACKUP_BASE="` + filepath.Join(*dataDir, "tor-keys-backup") + `"
 for d in smp xftp; do
   if [ -f "./tor/hidden_services/$d/hs_ed25519_secret_key" ]; then
     mkdir -p "$BACKUP_BASE/$d" 2>/dev/null || true
@@ -1720,6 +1721,9 @@ docker compose up -d --remove-orphans 2>/dev/null || true
 	http.HandleFunc("/api/paranoidx/chain/teardown", pxBridge.ChainTeardownHandler)
 	http.HandleFunc("/api/paranoidx/chain/state", pxBridge.ChainStateHandler)
 	http.HandleFunc("/api/paranoidx/chain/test", pxBridge.ChainTestHandler)
+	http.HandleFunc("/api/paranoidx/bridge/scan", pxBridge.ScanHandler)
+	http.HandleFunc("/api/paranoidx/bridge/build", pxBridge.BuildHandler)
+	http.HandleFunc("/api/paranoidx/bridge/report", pxBridge.ReportHandler)
 	http.HandleFunc("/api/paranoidx/vpn/profiles", pxBridge.VPNProfileHandler)
 	http.HandleFunc("/api/paranoidx/vpn/up", pxBridge.VPNUpHandler)
 	http.HandleFunc("/api/paranoidx/vpn/down", pxBridge.VPNDownHandler)
@@ -2091,7 +2095,14 @@ docker compose up -d --remove-orphans 2>/dev/null || true
 	})
 
 	// ===== Radio System =====
-	radioSvc := radio.NewRadioService(*dataDir)
+	// RadioDir from config (defaults to <dataDir>/radio)
+	radioDir := cfg.RadioDir
+	if radioDir == "" {
+		radioDir = filepath.Join(*dataDir, "radio")
+	}
+	slog.Info("radio dir", "path", radioDir)
+	// NewRadioService appends "/radio" to its arg, so pass the parent
+	radioSvc := radio.NewRadioService(filepath.Dir(radioDir))
 	annStore := radio.NewAnnouncementStore(*dataDir)
 	radioHandler := api.RadioHandler(radioSvc, annStore)
 
@@ -3440,7 +3451,17 @@ docker compose up -d --remove-orphans 2>/dev/null || true
 	}()
 
 	handler := api.PerfMiddleware(middleware.SecurityMiddleware(http.DefaultServeMux))
-	srv := &http.Server{Addr: *listen, Handler: handler}
+
+	// Listen on localhost + docker bridge only (Tor-hidden dashboard).
+	// The docker0 bridge (172.17.0.1) is reachable from tor container via
+	// host.docker.internal; nothing is exposed to the public network.
+	addrs := []string{}
+	if *listen == "0.0.0.0:8080" || *listen == ":8080" {
+		addrs = []string{"127.0.0.1:8080", "172.17.0.1:8080"}
+	} else {
+		addrs = []string{*listen}
+	}
+	srv := &http.Server{Handler: handler}
 
 	// Persistence save on shutdown
 	api.GlobalChatHub.LoadPersisted(*dataDir)
@@ -3449,6 +3470,21 @@ docker compose up -d --remove-orphans 2>/dev/null || true
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	dcCloud.Start()
+
+	errCh := make(chan error, len(addrs))
+	for _, addr := range addrs {
+		ln, lerr := net.Listen("tcp", addr)
+		if lerr != nil {
+			slog.Error("listen failed", "addr", addr, "error", lerr)
+			continue
+		}
+		slog.Info("serving", "addr", ln.Addr().String(), "data", *dataDir)
+		go func() {
+			if err := srv.Serve(ln); err != nil && err != http.ErrServerClosed {
+				errCh <- err
+			}
+		}()
+	}
 
 	go func() {
 		sig := <-sigCh
@@ -3462,9 +3498,8 @@ docker compose up -d --remove-orphans 2>/dev/null || true
 		srv.Shutdown(ctxShut)
 	}()
 
-	slog.Info("serving", "addr", srv.Addr, "data", *dataDir)
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("listen failed", "error", err)
+	if err := <-errCh; err != nil {
+		slog.Error("serve failed", "error", err)
 	}
 	cancel()
 	slog.Info("shutdown complete")

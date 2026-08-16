@@ -21,6 +21,7 @@ type Bridge struct {
 	ctx          context.Context
 	cancel       context.CancelFunc
 	chain        *ChainOrchestrator
+	builder      *BridgeBuilder
 	torSocksPort int
 	vpnIface     string
 	v2rayPort    int
@@ -37,10 +38,12 @@ type Bridge struct {
 // composeDir should point to the docker/ directory containing docker-compose.yml.
 func NewBridge(dataDir, composeDir string, torSocksPort int, vpnIface string, simplexPort int) *Bridge {
 	ctx, cancel := context.WithCancel(context.Background())
+	chain := NewChainOrchestrator(dataDir, composeDir)
 	return &Bridge{
 		ctx:          ctx,
 		cancel:       cancel,
-		chain:        NewChainOrchestrator(dataDir, composeDir),
+		chain:        chain,
+		builder:      NewBridgeBuilder(dataDir, chain),
 		torSocksPort: torSocksPort,
 		vpnIface:     vpnIface,
 		v2rayPort:    10810,
@@ -67,7 +70,6 @@ func (b *Bridge) Start() error {
 	if b.VPNEnabled {
 		SetLayerStatus(LayerVPN, false, 0, "checking")
 	}
-	SetLayerStatus(LayerVMess, false, 0, "checking")
 	SetLayerStatus(LayerTor, false, 0, "checking")
 	SetLayerStatus(LayerSimpleX, false, 0, "checking")
 
@@ -118,12 +120,6 @@ func (b *Bridge) checkAll() {
 			b.checkVPN()
 		}()
 	}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		b.checkVMess()
-	}()
 
 	wg.Add(1)
 	go func() {
@@ -199,7 +195,7 @@ func (b *Bridge) checkVMess() {
 func (b *Bridge) GetProxyChain() []string {
 	chain := []string{}
 	if b.V2RayEnabled {
-		chain = append(chain, "v2ray (socks5://127.0.0.1:10808)")
+		chain = append(chain, "v2ray (socks5://127.0.0.1:10810)")
 	}
 	if b.VPNEnabled {
 		chain = append(chain, fmt.Sprintf("vpn (%s)", b.vpnIface))

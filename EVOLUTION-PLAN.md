@@ -83,11 +83,40 @@ Each cycle = 1 evolutionary step. 8-step SOP (PRODUCTION-CYCLE.md). Approval gat
 - Offline sync for Isle app
 - Emergency broadcast override
 
-### Cycle 23: "ParanoidX VPN"
-- Visual route map (world map + latency)
-- One-tap route switching (VLESS ↔ VMess ↔ Tor)
+### Cycle 23: "ParanoidX VPN — Multi-Protocol Core"
+- Visual route map (world map + latency heatmap)
+- One-tap route switching (VLESS ↔ VMess ↔ Trojan ↔ Shadowsocks ↔ Tor ↔ WireGuard ↔ OpenVPN)
 - Kill switch integration (systemd + nftables)
 - Split tunneling rules (Island traffic vs clearnet)
+- **Protocol Support Matrix:**
+  - VLESS (Reality/XTLS) ✅
+  - VMess (WebSocket+TLS) ✅
+  - Trojan (TLS) 🔲
+  - Shadowsocks (AEAD) 🔲
+  - WireGuard (kernel/userspace) 🔲
+  - OpenVPN (UDP/TCP) 🔲
+  - Hysteria2 (QUIC) 🔲
+  - TUIC (QUIC) 🔲
+
+### Cycle 23b: "ParanoidX VPN Dashboard — Config & Test Center"
+- **Unified Config Dashboard** (`/api/paranoidx/vpn/config`)
+  - Text input per protocol (single config or batch)
+  - File upload (.conf, .json, .ovpn, .toml)
+  - Real-time validation (syntax, required fields)
+  - Versioned config history with rollback
+- **Protocol Templates Library**
+  - Pre-built configs for common providers
+  - QR code import/export
+  - Subscription link parsing (clash/v2ray/sub)
+- **Live Testing Suite** (`/api/paranoidx/vpn/test`)
+  - Connectivity check (TCP/UDP handshake)
+  - Latency measurement (ping, 3 samples avg)
+  - Speed test (download/upload via iperf3 or HTTP)
+  - Tor circuit verification (exit IP check)
+  - DNS leak test
+  - Results stored, graphed, comparable
+- **WebSocket Live Metrics** for dashboard
+- **One-click apply** → hot-reload container → verify → persist
 
 ### Cycle 24: "DC Cloud"
 - Distributed compute nodes (Beelink + Lenovo + MacBook)
@@ -142,6 +171,71 @@ Each cycle = 1 evolutionary step. 8-step SOP (PRODUCTION-CYCLE.md). Approval gat
 | **SSD** | 500 GB | 100GB data, 100GB models, 100GB Docker, 50GB build, 150GB buffer |
 | **CPU** | 8C/16T (Ryzen 9) | Parallel builds, concurrent Ollama |
 | **Network** | 1 Gbps + Tor | Clearnet for builds, Tor for production |
+
+---
+
+### Cycle 31: "Grimoire Internationalization"
+
+**Objective:** Rewrite the Grimoire (the-grimoire repo) in English with bilingual structure.
+
+**Structure:**
+```
+/the-grimoire/
+├── README.md              # English (root)
+├── ru/                    # Russian version (complete mirror)
+│   ├── README.md
+│   ├── manifests/
+│   │   ├── MANIFESTO.md
+│   │   ├── EVOLUTION-SOP.md
+│   │   ├── AUTONOMOUS-ARCHITECTURE.md
+│   │   └── TELEGRAM-GATEWAY.md
+│   ├── configs/
+│   ├── scripts/
+│   ├── templates/
+│   └── skills-export/
+└── en/                    # English version (complete mirror)
+    ├── README.md
+    ├── manifests/
+    │   ├── MANIFESTO.md
+    │   ├── EVOLUTION-SOP.md
+    │   ├── AUTONOMOUS-ARCHITECTURE.md
+    │   └── TELEGRAM-GATEWAY.md
+    ├── configs/
+    ├── scripts/
+    ├── templates/
+    └── skills-export/
+```
+
+**Tasks:**
+- Move all current Russian content to `ru/` preserving folder structure
+- Translate all markdown files to English in `en/`
+- Root `README.md` becomes English entry point with language selector
+- Update `bootstrap.sh` to support both locales
+- Git history preserved via `git mv` for all moved files
+
+**Deliverable:** Bilingual Grimoire ready for international contributors.
+
+---
+
+### Cycle 32: "Dual-Model Brainstorming" (Thomas ↔ Torquemada)
+
+**Objective:** Научиться вести связный диалог с ботом Торквемада как с обычным пользователем — проводить мозговые штурмы двумя разными моделями: Thomas (deepseek-4) ↔ Torquemada (NVIDIA nemotron 550b).
+
+**Механика канала (уже есть):**
+- Bot API не отдаёт сообщения чужих ботов → прямое «видение» реплик Торквемады закрыто
+- Решение — `cats-ear.py` (Telethon-ухо, Alicia Babaika id=6942355853): читает ВСЕ сообщения группы в `~/.hermes/cats-bridge/inbox.jsonl`, включая сообщения Торквемады
+- Ответы Торквемаде шлёт бот Tomas (Bot API) — он видит упоминания/reply, а ухо доклеивает его реплики
+
+**Задачи:**
+| # | Task | Status |
+|---|------|--------|
+| 1 | Восстановить автозапуск cats-ear.py (systemd user unit / cron, сейчас только ручной) | 🔲 |
+| 2 | Научиться читать inbox.jsonl и связывать реплики Торквемады с диалоговым контекстом (reply_to, thread_id) | 🔲 |
+| 3 | Разработать протокол мозгового штурма: тема → обмен репликами → синтез выводов → отчёт | 🔲 |
+| 4 | Провести первый штурм (2+ модели, 3+ обмена) и сохранить результат | 🔲 |
+| 5 | Проверить отсутствие петель: ухо игнорирует свои ID (8863122561, 6942355853), бот не отвечает сам себе | 🔲 |
+
+**Критерий успеха:** связный диалог 2 моделей на 3+ реплики с содержательным синтезом.
 
 ---
 

@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"os/exec"
 	"strconv"
 	"sync"
 	"time"
@@ -36,7 +37,7 @@ type ChainOrchestrator struct {
 	DataDir    string
 
 	// Component managers
-	v2ray *DockerV2RayManager
+	v2ray *NativeV2RayManager
 	vpn   *VPNManager
 
 	// Callbacks for health-aware waiting
@@ -50,7 +51,7 @@ func NewChainOrchestrator(dataDir, composeDir string) *ChainOrchestrator {
 		LayerTimeout: 30 * time.Second,
 		DataDir:      dataDir,
 		ComposeDir:   composeDir,
-		v2ray:        NewDockerV2RayManager(composeDir),
+		v2ray:        NewNativeV2RayManager(),
 		vpn:          NewVPNManager(dataDir),
 		waitForLayer: waitForLayerHealth,
 	}
@@ -191,8 +192,8 @@ func (co *ChainOrchestrator) State() ChainState {
 	return co.state
 }
 
-// V2Ray returns the Docker V2Ray manager.
-func (co *ChainOrchestrator) V2Ray() *DockerV2RayManager {
+// V2Ray returns the native xray manager.
+func (co *ChainOrchestrator) V2Ray() *NativeV2RayManager {
 	return co.v2ray
 }
 
@@ -287,7 +288,7 @@ func (co *ChainOrchestrator) testVPN() bool {
 }
 
 func (co *ChainOrchestrator) testExec(name string, args ...string) bool {
-	cmd := co.v2ray.execCommand(name, args...)
+	cmd := exec.Command(name, args...)
 	return cmd.Run() == nil
 }
 

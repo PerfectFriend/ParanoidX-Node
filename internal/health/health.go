@@ -141,15 +141,15 @@ func (m *Monitor) checkDocker() []Check {
 func (m *Monitor) checkXRay() []Check {
 	c := Check{Name: "xray_native"}
 	t := time.Now()
-	conn, err := net.DialTimeout("tcp", "127.0.0.1:10812", 3*time.Second)
+	conn, err := net.DialTimeout("tcp", "127.0.0.1:10810", 3*time.Second)
 	c.Latency = time.Since(t).Round(time.Millisecond).String()
 	if err != nil {
 		c.Status = "fail"
-		c.Detail = "xray not reachable on 127.0.0.1:10812"
+		c.Detail = "xray not reachable on 127.0.0.1:10810"
 	} else {
 		conn.Close()
 		c.Status = "ok"
-		c.Detail = "xray native VMESS on :10812"
+		c.Detail = "xray native socks on :10810"
 	}
 	return []Check{c}
 }
@@ -317,7 +317,7 @@ func (m *Monitor) checkTor() []Check {
 	var checks []Check
 
 	cOnion := Check{Name: "tor_dashboard_onion"}
-	dashOnion := "/home/tomas/.local/share/simplex-node/dashboard_onion.txt"
+	dashOnion := filepath.Join(m.DataDir, "dashboard_onion.txt")
 	if b, err := os.ReadFile(dashOnion); err == nil {
 		cOnion.Status = "ok"
 		cOnion.Detail = strings.TrimSpace(string(b))

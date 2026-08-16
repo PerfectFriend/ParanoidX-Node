@@ -94,8 +94,18 @@ def fetch_json(path, timeout=10):
     url = API.rstrip("/") + path
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
-        resp = urllib.request.urlopen(req, timeout=timeout)
+        # Bypass global Tor SOCKS proxy env vars — urllib cannot speak socks5
+        # and would otherwise fail all local API polls (monitor goes blind).
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        resp = opener.open(req, timeout=timeout)
         return json.loads(resp.read().decode())
+    except urllib.error.HTTPError as e:
+        # /api/health returns HTTP 503 when unhealthy — the body is still a
+        # valid JSON report. Read it; a 503 is NOT an unreachable API.
+        try:
+            return json.loads(e.read().decode())
+        except Exception:
+            return {"_error": f"http {e.code}"}
     except Exception as e:
         return {"_error": str(e)}
 

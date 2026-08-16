@@ -36,7 +36,9 @@ except: print('N/A')
 }
 
 TOKEN_FILE="${HOME}/.config/opencode-tg-bot.token"
-CHAT_FILE="${HOME}/.config/opencode-tg-bot.chat"
+# Target: Rabbit White private chat (bot doesn't have group access/topics)
+CHAT_ID="2131095374"
+THREAD_ID=""
 
 if [ ! -f "$TOKEN_FILE" ]; then
   echo "ERROR: no token at $TOKEN_FILE"
@@ -44,14 +46,6 @@ if [ ! -f "$TOKEN_FILE" ]; then
 fi
 
 TOKEN=$(tr -d '\n\r' < "$TOKEN_FILE")
-
-# CHAT_ID: arg 2 (if -d/-p), or file, or arg 2 for text
-if [ -f "$CHAT_FILE" ]; then
-  CHAT_ID=$(tr -d '\n\r' < "$CHAT_FILE")
-else
-  echo "No chat_id file at $CHAT_FILE"
-  exit 1
-fi
 
 case "${1:-}" in
   -d|--document)
@@ -61,10 +55,12 @@ case "${1:-}" in
       echo "ERROR: file not found: $FILE"
       exit 1
     fi
-    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendDocument" \
-      -F "chat_id=${CHAT_ID}" \
-      -F "document=@${FILE}" \
-      -F "caption=${CAPTION}" | python3 -c '
+    if [ -n "$THREAD_ID" ]; then
+      curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendDocument" \
+        -F "chat_id=${CHAT_ID}" \
+        -F "message_thread_id=${THREAD_ID}" \
+        -F "document=@${FILE}" \
+        -F "caption=${CAPTION}" | python3 -c '
 import sys, json
 d = json.load(sys.stdin)
 if d.get("ok"):
@@ -72,6 +68,19 @@ if d.get("ok"):
 else:
     print("❌ Error:", d.get("description", d))
 '
+    else
+      curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendDocument" \
+        -F "chat_id=${CHAT_ID}" \
+        -F "document=@${FILE}" \
+        -F "caption=${CAPTION}" | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+if d.get("ok"):
+    print("✅ Document sent, message_id:", d["result"]["message_id"])
+else:
+    print("❌ Error:", d.get("description", d))
+'
+    fi
     ;;
 
   -p|--photo)
@@ -81,10 +90,12 @@ else:
       echo "ERROR: file not found: $FILE"
       exit 1
     fi
-    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendPhoto" \
-      -F "chat_id=${CHAT_ID}" \
-      -F "photo=@${FILE}" \
-      -F "caption=${CAPTION}" | python3 -c '
+    if [ -n "$THREAD_ID" ]; then
+      curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendPhoto" \
+        -F "chat_id=${CHAT_ID}" \
+        -F "message_thread_id=${THREAD_ID}" \
+        -F "photo=@${FILE}" \
+        -F "caption=${CAPTION}" | python3 -c '
 import sys, json
 d = json.load(sys.stdin)
 if d.get("ok"):
@@ -92,6 +103,19 @@ if d.get("ok"):
 else:
     print("❌ Error:", d.get("description", d))
 '
+    else
+      curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendPhoto" \
+        -F "chat_id=${CHAT_ID}" \
+        -F "photo=@${FILE}" \
+        -F "caption=${CAPTION}" | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+if d.get("ok"):
+    print("✅ Photo sent, message_id:", d["result"]["message_id"])
+else:
+    print("❌ Error:", d.get("description", d))
+'
+    fi
     ;;
 
   -*)
@@ -102,9 +126,25 @@ else:
   *)
     RAW_MSG="${1:-A1 update}"
     FULL_MSG=$(append_uptime_footer "$RAW_MSG")
-    curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
-      -H "Content-Type: application/json" \
-      -d "$(python3 -c "
+    if [ -n "$THREAD_ID" ]; then
+      curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+        -H "Content-Type: application/json" \
+        -d "$(python3 -c "
+import json
+msg = '''${FULL_MSG}'''
+print(json.dumps({'chat_id': ${CHAT_ID}, 'message_thread_id': ${THREAD_ID}, 'text': msg[:4000]}))
+")" | python3 -c '
+import sys, json
+d = json.load(sys.stdin)
+if d.get("ok"):
+    print("✅ Inquisitor msg sent, message_id:", d["result"]["message_id"])
+else:
+    print("❌ Error:", d.get("description", d))
+'
+    else
+      curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+        -H "Content-Type: application/json" \
+        -d "$(python3 -c "
 import json
 msg = '''${FULL_MSG}'''
 print(json.dumps({'chat_id': ${CHAT_ID}, 'text': msg[:4000]}))
@@ -116,5 +156,6 @@ if d.get("ok"):
 else:
     print("❌ Error:", d.get("description", d))
 '
+    fi
     ;;
 esac

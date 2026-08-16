@@ -1,4 +1,4 @@
-// Package config provides centralized configuration for simplex-node.
+// Package config provides centralized configuration for paranoidx.
 package config
 
 import (
@@ -16,6 +16,9 @@ type Config struct {
 	Listen string `json:"listen,omitempty"`
 	// DataDir is the directory for all state files.
 	DataDir string `json:"data_dir,omitempty"`
+	// RadioDir is the directory for radio music/playlists.
+	// Defaults to <DataDir>/radio when empty.
+	RadioDir string `json:"radio_dir,omitempty"`
 
 	// VaultQuotaMB is the maximum vault size in MB.
 	VaultQuotaMB int `json:"vault_quota_mb,omitempty"`
@@ -76,7 +79,7 @@ func DefaultConfig() *Config {
 	home, _ := os.UserHomeDir()
 	c := &Config{
 		Listen:         "0.0.0.0:8080",
-		DataDir:        filepath.Join(home, ".local/share/simplex-node"),
+		DataDir:        filepath.Join(home, ".local/share/paranoidx"),
 		VaultQuotaMB:   2048,
 		IslandBotURL:   "http://127.0.0.1:5002/send",
 		AlertURL:       "http://127.0.0.1:5002/send_alert",
@@ -116,6 +119,9 @@ func Load(path string) *Config {
 	}
 	if fileCfg.DataDir != "" {
 		cfg.DataDir = fileCfg.DataDir
+	}
+	if fileCfg.RadioDir != "" {
+		cfg.RadioDir = fileCfg.RadioDir
 	}
 	if fileCfg.VaultQuotaMB > 0 {
 		cfg.VaultQuotaMB = fileCfg.VaultQuotaMB

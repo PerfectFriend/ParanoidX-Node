@@ -54,7 +54,6 @@ var globalStatus = &BridgeStatus{
 		LayerV2Ray:   {Layer: LayerV2Ray},
 		LayerTor:     {Layer: LayerTor},
 		LayerSimpleX: {Layer: LayerSimpleX},
-		LayerVMess:   {Layer: LayerVMess},
 		// VPN added dynamically via SetLayerStatus when enabled
 	},
 	maxHistory: 100,
