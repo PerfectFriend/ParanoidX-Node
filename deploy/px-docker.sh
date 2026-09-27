@@ -328,12 +328,17 @@ do_keys_import() {
   [ -n "$KEYS_SRC" ] || die "укажи бэкап: --keys DIR (см. px-backup.sh)"
   [ -d "$KEYS_SRC" ] || die "каталог с ключами не найден: $KEYS_SRC"
 
-  # Принимаем и корень бэкапа, и каталог с onion-keys внутри.
+  # Принимаем три раскладки, потому что бэкапы делают разные скрипты:
+  #   * <b>/hidden_services/<svc>/…  — scripts/px-backup.sh save и onion
+  #   * <b>/<svc>/…                 — «голый» каталог с ключами
+  #   * <b>/onion-keys/<svc>/…      — старый формат
+  # Раньше знали только вторую и третью, и бэкап собственный скрипта
+  # не импортировался: die «не найдены каталоги сервисов».
   local base="$KEYS_SRC"
-  if [ ! -d "$base/smp" ] && [ -d "$base/onion-keys/smp" ]; then
-    base="$KEYS_SRC/onion-keys"
-    info "ключи лежат в $base"
-  fi
+  for cand in "$KEYS_SRC/hidden_services" "$KEYS_SRC/onion-keys" "$KEYS_SRC"; do
+    if [ -d "$cand/smp" ]; then base="$cand"; break; fi
+  done
+  [ "$base" != "$KEYS_SRC" ] && info "ключи лежат в $base"
   [ -d "$base/smp" ] || die "в $KEYS_SRC не найдены каталоги сервисов (smp/, xftp/, ...)"
 
   # Сверяем комплектность ДО копирования, чтобы не оставить стек
