@@ -35,12 +35,37 @@ Thumbs.db
 docker/smp_state/
 docker/xftp_state/
 docker/coturn/
-docker/smp_configs/*.key
-docker/smp_configs/*.crt
-docker/smp_configs/*.pem
+docker/addresses.json
+
+# ── Приватные ключи и сертификаты ───────────────────────────────────────────
+# ВСЕ .key приватные по определению. Публичные .crt нужны для проверки
+# подписи, поэтому остаются в репозитории.
+*.key
 docker/smp_configs/ca.srl
 docker/smp_configs/fingerprint
-docker/addresses.json
+docker/xftp_configs/ca.srl
+docker/xftp_configs/fingerprint
+install-pack/docker/smp_configs/ca.srl
+install-pack/docker/smp_configs/fingerprint
+install-pack/docker/xftp_configs/ca.srl
+install-pack/docker/xftp_configs/fingerprint
+
+# Скрытые сервисы Tor: приватный ключ — это ДОСТУП к ноде. Публичный
+# ключ и hostname безопасны и остаются в репозитории, чтобы адреса
+# были видны в коде и в логах установки.
+docker/tor/hidden_services/*/hs_ed25519_secret_key
+install-pack/docker/tor/hidden_services/*/hs_ed25519_secret_key
+
+# Токены и учётные данные
+Gemma4Token
+*Token
+*.token
+bosskeys.txt
+genkey
+
+# Секреты v2ray/xray
+docker/v2ray/certs/
+install-pack/xray/config.json
 
 # Dart/Flutter
 .dart_tool/
@@ -48,6 +73,12 @@ docker/addresses.json
 .pub/
 build/
 *.lock
+# ...кроме pubspec.lock: для Flutter-ПРИЛОЖЕНИЙ (не пакетов) lock-файл
+# обязателен в git — он фиксирует точные версии зависимостей, и без него
+# клон собирает другие версии, чем проверенная сборка. Для библиотек
+# (apps/shared/*) lock не коммитится, там версии задаёт корневой lock
+# приложения. Порядок правил важен: negate должен идти ПОСЛЕ *.lock.
+!apps/*/pubspec.lock
 apps/**/.packages
 apps/**/.dart_tool/
 apps/**/build/
