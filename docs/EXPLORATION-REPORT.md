@@ -315,10 +315,10 @@ All containers have health checks. Tor onions are persistent via bind-mount.
 
 | Bot | Token | Type | Purpose |
 |-----|-------|------|---------|
-| **@AskSteward_bot** | `8885061690:AAEkJ6Yx5FoWgdSicJ2oZXmhPWprY2Q_Yi4` | Polling | AI assistant, economy queries, inline menus |
-| **@DarkPushkin_bot** | `8471637894:AAFXJb_hTCCpXpI3PyUJ7EOw7u2AVb_NLC4` | Polling | Creative lore generation |
-| **@torquemada878_bot** | `8825368561:AAF3HAMk4r-g9xWAuJIcv2uggEjT2LqCH6g` | Polling | Admin notifications, build/deploy commands |
-| **Inquisitor** | `8933708843:AAGiADifu4i7jW0xnvLG4GXJCt2MhGpLOec` | Script | Automated cycle reports to chat 143293811 |
+| **@AskSteward_bot** | `<BOT_TOKEN>` | Polling | AI assistant, economy queries, inline menus |
+| **@DarkPushkin_bot** | `<BOT_TOKEN>` | Polling | Creative lore generation |
+| **@torquemada878_bot** | `<BOT_TOKEN>` | Polling | Admin notifications, build/deploy commands |
+| **Inquisitor** | `<BOT_TOKEN>` | Script | Automated cycle reports to chat 143293811 |
 
 All bots use native Go (`net/http`), `InlineKeyboardMarkup` menus, callback query routing.
 

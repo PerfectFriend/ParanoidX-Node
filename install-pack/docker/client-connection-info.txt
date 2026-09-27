@@ -4,10 +4,10 @@
 ═══════════════════════════════════════════════════════════════════════════════
 
 SMP (сообщения):
-  smp://xlxM8uqJQZgu45bi2OSDokYilqEP8RGBeBb48f0UvTY=@n7v3o4kscjvgg5fitlo3u7bjhrj4u4avxnfhqommxepmj72swskgq3qd.onion:5223
+  smp://<SMP_PASSWORD>@7czed3rxeryz4zxlo7wiwgz36yfmdwvu6ylv5wkby3trei3qsuw4lnqd.onion:5223
 
 XFTP (файлы и медиа):
-  xftp://IROP-aDKaEDT06ShFlN36KYT2RkxzNKcDIF1x9ucTcI=@62o2qarjf7rlw3ahnd5gwej6u6li6djbdmosek3dqw7ayuxpzmf5nnid.onion:443
+  xftp://IROP-aDKaEDT06ShFlN36KYT2RkxzNKcDIF1x9ucTcI=@fv3pfzxih5sjf33jmusfbskmd2i3lywaaaysh6tijc7df7k6sijq3yyd.onion:443
 
 ───────────────────────────────────────────────────────────────────────────────
 📞 ГОЛОСОВЫЕ И ВИДЕО ЗВОНКИ (WebRTC через скрытый TURN)
@@ -55,7 +55,7 @@ XFTP (файлы и медиа):
 Реальный статус: МОСТ ПОДКЛЮЧЕН (bridge "connected to Island Services CLI WS — the gates to the silver soul are open", меню команд настроено, /set bot commands выполнено). Реальные данные в командах (/wallet серебро из резерва, /radio реальные анонсы из Vault, /market реальные лоты из API, /tokenize /id из rwa_registry, /vault реальные файлы).
 
 Чтобы получить ТВОЙ личный simplex:/contact#... ссылку для добавления:
-  1. Запусти интерактивно: /home/tomas/bin/simplex-chat-island -d /home/tomas/.local/share/simplex-node/island-bot --socks-proxy 127.0.0.1:9050 -s smp://...@onion:5223
+  1. Запусти интерактивно: /home/tomas/bin/simplex-chat-island -d /home/tomas/.local/share/simplex-node/island-bot --socks-proxy 127.0.0.1:9050 -s smp://<SMP_PASSWORD>@onion:5223
   2. /address
   3. Скопируй выданную ссылку (или QR в приложении) и добавь как контакт.
 
