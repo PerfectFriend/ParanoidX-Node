@@ -105,3 +105,6 @@ opencode-config-backup/
 # Sensitive / build-artifacts
 bosskeys.txt
 genkey
+
+# Собранный бинарник ноды — 20 МБ, собирается из исходников
+/ParanoidX
