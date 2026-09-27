@@ -1,0 +1,52 @@
+# ParanoidX coturn config for WebRTC ICE/TURN hidden in .onion
+# Only TCP for Tor HS compatibility.
+#
+# ── ШАБЛОН, НЕ ГОТОВАЯ КОНФИГУРАЦИЯ ────────────────────────────────────────
+# Этот файл — TEMPLATE. Он попадает в репозиторий БЕЗ секретов.
+# Скопируйте его в docker/coturn/turnserver.conf и подставьте значение.
+#
+#   cp docker/coturn/turnserver.conf.template docker/coturn/turnserver.conf
+#   openssl rand -base64 32        # → вписать в static-auth-secret
+#   chmod 600 docker/coturn/turnserver.conf
+#
+# На установке это делает автоматически deploy/px-docker.sh (проверка coturn):
+# он генерирует turnserver.conf из этого шаблона, если файла нет, и
+# заменяет {{STATIC_AUTH_SECRET}} на свежий секрет.
+
+listening-port=3478
+tls-listening-port=5349
+
+# Enable fingerprint for STUN
+fingerprint
+
+# Use long term credentials with static auth secret (for dynamic username/cred generation)
+lt-cred-mech
+use-auth-secret
+# СЕКРЕТ: заменяется при установке. В репозитории — заглушка.
+static-auth-secret={{STATIC_AUTH_SECRET}}
+
+realm=ParanoidX.local
+
+# TLS cert for turns:// (self-signed for .onion, clients should pin or trust the cert)
+cert=/etc/coturn/turn_cert.pem
+pkey=/etc/coturn/turn_key.pem
+cipher-list=DEFAULT
+
+# Log to stdout for docker
+log-file=stdout
+verbose
+
+# Disable UDP listener (Tor HS provides TCP)
+no-udp
+
+# Relay port range (for media relay)
+min-port=49152
+max-port=65535
+
+# Allow all for now (in production restrict)
+# allowed-peer-ip=...
+
+# Note: clients will use:
+# turn:your-onion.onion:3478?transport=tcp
+# or for TLS (recommended):
+# turns:your-onion.onion:5349?transport=tcp

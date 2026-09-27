@@ -1,0 +1,43 @@
+name: isle_app
+description: The Isle — citizen app for Saint Mary Liberty Island
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.0
+  http: ^1.2.0
+  # Было ^0.19.0 — конфликтовало с apps/shared/models, которому нужен
+  # ^0.20.2 (там DateFormat из chat.dart). Pub отказывался решать.
+  intl: ^0.20.2
+  qr_flutter: ^4.1.0
+  file_picker: ^8.0.0
+  path_provider: ^2.1.0
+  shared_preferences: ^2.2.0
+  crypto: ^3.0.3
+  models:
+    path: ../shared/models
+  api_client:
+    path: ../shared/api_client
+  widgets:
+    path: ../shared/widgets
+  encrypt: ^5.0.3
+  bip39: ^1.0.6
+  bip32: ^2.0.0
+  ed25519_hd_key: ^2.3.0
+  convert: ^3.1.2
+  pinenacl: ^0.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/

@@ -1,0 +1,37 @@
+// Политика polkit: node-monitor управляет демоном ParanoidX без пароля root.
+//
+// Зачем: ParanoidX-dashboard.service — system-scope. Без этого правила
+// кнопки ON/OFF демона в мониторе не могут работать: polkit требует
+// аутентификации, а у монитора нет пароля.
+//
+// Почему через org.freedesktop.policykit.exec, а не manage-unit:
+// polkit умеет фильтровать по имени ПРОГРАММЫ. Разрешив
+// org.freedesktop.systemd1.manage-unit, мы разрешили бы управлять ЛЮБЫМ
+// системным сервисом — это дыра. Здесь разрешена ровно одна программа,
+// /usr/local/bin/px-node-control, а уже она проверяет имя юнита.
+//
+// Имя пользователя берётся из install-скрипта, который подставляет
+// фактического владельца. Совпадение с локальным и активным — чтобы
+// правило не работало из неинтерактивного контекста.
+
+polkit.addRule(function(action, subject) {
+    if (action.id !== "org.freedesktop.policykit.exec") {
+        return undefined;
+    }
+    if (action.lookup("program") !== "/usr/local/bin/px-node-control") {
+        return undefined;
+    }
+    // subject.user — всегда строка; при несовпадении правило не применяется.
+    if (subject.user !== "PX_USER_PLACEHOLDER") {
+        return undefined;
+    }
+    // Локальная сессия на этом же хосте.
+    if (!subject.local) {
+        return undefined;
+    }
+    // Интерактивная сессия: запуск из cron/systemd правило не пропустит.
+    if (!subject.active) {
+        return undefined;
+    }
+    return polkit.Result.YES;
+});

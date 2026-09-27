@@ -1,0 +1,44 @@
+#!/bin/sh
+# px-node-control — единственная точка входа для управления демоном ParanoidX.
+#
+# Запускается через pkexec от node-monitor. Polkit-правило разрешает
+# org.freedesktop.policykit.exec ТОЛЬКО для этой программы, поэтому любой
+# другой бинарь под root не запустится. Здесь мы сужаем ещё сильнее:
+# принимаем ровно один юнит и четыре действия, остальное отвергаем.
+#
+# Почему нельзя разрешить systemctl напрямую: polkit умеет фильтровать по
+# имени ПРОГРАММЫ, но не по имени ЮНИТА. Разрешив /bin/systemctl, мы
+# открыли бы остановку любого системного сервиса. Wrapper закрывает это.
+
+set -eu
+
+UNIT="ParanoidX-dashboard.service"
+ALLOWED_UNITS="$UNIT"
+
+die() {
+    echo "px-node-control: $*" >&2
+    exit 2
+}
+
+[ $# -ge 1 ] || die "usage: px-node-control <start|stop|restart|status> [unit]"
+
+ACTION="$1"
+UNIT_ARG="${2:-$UNIT}"
+
+case "$ACTION" in
+    start|stop|restart|status) ;;
+    *) die "неизвестное действие: $ACTION (допустимо: start|stop|restart|status)" ;;
+esac
+
+# Единая проверка: имя юнита должно быть В СПИСКЕ. Сравнение построчное,
+# поэтому «systemd-ctl stop» или «unit; rm -rf /» не пройдут.
+if ! printf '%s\n' "$ALLOWED_UNITS" | grep -qxF -- "$UNIT_ARG"; then
+    die "юнит '$UNIT_ARG' не разрешён (разрешён только: $UNIT)"
+fi
+
+# Отсекаем лишние аргументы: они могут изменить смысл systemctl.
+if [ $# -gt 2 ]; then
+    die "слишком много аргументов"
+fi
+
+exec /bin/systemctl "$ACTION" "$UNIT_ARG"

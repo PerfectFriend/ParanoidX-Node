@@ -1,0 +1,26 @@
+name: models
+description: Shared Dart data models for simplex-node applications
+version: 1.0.0
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  bip39: ^1.0.6
+  bip32: ^2.0.0
+  ed25519_hd_key: ^2.0.0
+  crypto: ^3.0.3
+  pointycastle: ^3.8.0
+  convert: ^3.1.1
+  # Импортируются в lib/, но отсутствовали в манифесте: без них
+  # `dart analyze` давал uri_does_not_exist, а сборка падала.
+  intl: ^0.20.2
+  shared_preferences: ^2.5.5
+  pinenacl: ^0.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:

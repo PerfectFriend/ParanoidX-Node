@@ -1,0 +1,39 @@
+{
+  "_README": "ШАБЛОН. Скопируй в ~/.local/share/simplex-node/simplex-node.json и заполни поля с токенами. Секреты НЕ коммитятся в git (см. .gitignore: simplex-node.json).",
+
+  "listen": ":8080",
+  "data_dir": "~/.local/share/simplex-node",
+
+  "_radio_dir_комментарий": "Каталог для радио/медиа. На машине без USB поставь путь на диске, иначе нода будет писать в никуда.",
+  "radio_dir": "~/media/radio",
+
+  "_ollama_комментарий": "Локальный Ollama. Либо локально (127.0.0.1:11434), либо по LAN. НЕ указывай 0.0.0.0 — это адрес прослушивания, не адрес сервера.",
+  "ollama_url": "http://127.0.0.1:11434",
+  "ollama_model": "llama3.1:8b",
+
+  "_telegram_комментарий": "Токены ботов от @BotFather. Все поля *_token обязательны только если нужен соответствующий бот. *_chat_id — id чата/группы (положительное число для группы, отрицательное для супергруппы).",
+
+  "ask_steward_token": "ЗАПОЛНИ: токен @AskSteward_bot",
+  "ask_steward_chat_id": 0,
+
+  "dark_pushkin_token": "ЗАПОЛНИ: токен @juliuscesar420_bot",
+  "dark_pushkin_chat_id": 0,
+
+  "torquemada_token": "ЗАПОЛНИ: токен @torquemada878_bot",
+  "torquemada_chat_id": 0,
+
+  "inquisitor_token": "ЗАПОЛНИ: токен инквизитора (для отчётов в тред)",
+  "inquisitor_chat_id": 0,
+
+  "_xray_комментарий": "Не обязательно — заполняется автоматически. Укажи только если хочешь свой внешний прокси вместо подписки.",
+  "xray_socks": "127.0.0.1:10810",
+  "proxy_sub_urls": [
+    "https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt",
+    "https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/Eternity.txt",
+    "https://raw.githubusercontent.com/Pawdroid/Free-servers/sub"
+  ],
+  "_proxy_sub_комментарий": "Сюда же добавляй СВОЮ закрытую подписку. URL не должен попадать в логи и Telegram.",
+
+  "_onion_комментарий": "Onion-адрес ноды. Генерируется при первом старте, если оставить пустым.",
+  "onion_address": ""
+}

@@ -34,7 +34,11 @@ Thumbs.db
 # Docker state
 docker/smp_state/
 docker/xftp_state/
-docker/coturn/
+# docker/coturn/ вне git: там конфиг с TURN-паролем и TLS-ключи.
+# Но ШАБЛОН конфига нужен в репозитории — по нему установщик собирает
+# рабочий turnserver.conf со свежим секретом (deploy/px-docker.sh).
+docker/coturn/*
+!docker/coturn/turnserver.conf.template
 docker/addresses.json
 
 # ── Приватные ключи и сертификаты ───────────────────────────────────────────

@@ -1,0 +1,16 @@
+[Unit]
+Description=Refresh xray subscription list every 12h (independent of GUI/reboot)
+
+[Timer]
+# 12 часов. Persistent=true — если машина была выключена, проход выполнится
+# при следующем старте, а не потеряется. Именно это просил пользователь:
+# обновление не зависит ни от GNOME, ни от трея, ни от сеанса.
+OnCalendar=*-*-* 00/12:00:00
+Persistent=true
+# Разброс: не бить ровно в полночь все 12-часовые таймеры разом.
+RandomizedDelaySec=300
+AccuracySec=30s
+Unit=px-xray-refresh.service
+
+[Install]
+WantedBy=timers.target
