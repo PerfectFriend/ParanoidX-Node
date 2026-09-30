@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """node-monitor — Wayland-aware system tray monitor for PX Node / Royal ParanoidX Transport Node (sequential poller, low resources)."""
 import os, sys, fcntl, re, shutil
+import subprocess, time, threading, json, urllib.request, urllib.error, socket, atexit
 
 # ── Single-instance lock ─────────────────────────────────────────────────────
 PID_FILE = os.path.join(os.environ.get("DATA_DIR", os.path.expanduser("~/.local/share/simplex-node")), "node-monitor.pid")
@@ -21,6 +22,23 @@ def _acquire_lock():
 _LOCK_FD = _acquire_lock()
 # ──────────────────────────────────────────────────────────────────────────────
 
+API = os.environ.get("NODE_API", "http://127.0.0.1:8080")
+NODE_BIN = os.environ.get("NODE_BIN", os.path.expanduser("~/bin/simplex-node"))
+POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "120"))
+LOG_POLL_INTERVAL = int(os.environ.get("LOG_POLL_INTERVAL", "60"))
+DATA_DIR = os.environ.get("DATA_DIR", os.path.expanduser("~/.local/share/simplex-node"))
+ICON_DIR = os.path.join(DATA_DIR, "icons")
+os.makedirs(ICON_DIR, exist_ok=True)
+LOG = os.path.join(DATA_DIR, "node-monitor.log")
+
+def log(msg):
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(LOG, "a") as f:
+            f.write(f"{ts} {msg}\n")
+    except OSError:
+        print(f"{ts} {msg}", file=sys.stderr)
+
 # point GI at our local typelib (AyatanaAppIndicator3)
 _typ = os.environ.get("GI_TYPELIB_PATH", "")
 _tl = os.path.expanduser("~/.local/share/girepository-1.0")
@@ -39,23 +57,8 @@ try:
 except (ImportError, ValueError):
     _HAVE_NOTIFY = False
     log("Notify not available, falling back to notify-send")
-import subprocess, time, threading, json, urllib.request, urllib.error, socket, atexit
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
-
-API = os.environ.get("NODE_API", "http://127.0.0.1:8080")
-NODE_BIN = os.environ.get("NODE_BIN", os.path.expanduser("~/bin/simplex-node"))
-POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", "120"))
-LOG_POLL_INTERVAL = int(os.environ.get("LOG_POLL_INTERVAL", "30"))
-DATA_DIR = os.environ.get("DATA_DIR", os.path.expanduser("~/.local/share/simplex-node"))
-ICON_DIR = os.path.join(DATA_DIR, "icons")
-os.makedirs(ICON_DIR, exist_ok=True)
-LOG = os.path.join(DATA_DIR, "node-monitor.log")
-
-def log(msg):
-    ts = time.strftime("%Y-%m-%d %H:%M:%S")
-    with open(LOG, "a") as f:
-        f.write(f"{ts} {msg}\n")
 
 # ── Log level colors ────────────────────────────────────────────
 LOG_COLORS = {
@@ -112,7 +115,9 @@ def fetch_json(path, timeout=10):
 
 def system_info():
     import psutil
-    cpu = psutil.cpu_percent(interval=0.5)
+    # interval=None -> non-blocking (uses delta since last call); interval=0.5
+    # froze the poller for half a second on every cycle.
+    cpu = psutil.cpu_percent(interval=None)
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage("/")
     boot = psutil.boot_time()
@@ -246,6 +251,26 @@ class NodeMonitor:
         self._stop = False
         self._status = {"status": "unknown", "bridge": False, "healthy": False, "messages": 0}
 
+        # Модуль управления компонентами (ON/OFF/TEST, стоп-всё, ротация).
+        # Импорт отложенный: node-control тянет subprocess и сам monitor его
+        # не должен блокировать при старте.
+        self.control = None
+        try:
+            import importlib.util
+            _here = os.path.dirname(os.path.abspath(__file__))
+            _spec = importlib.util.spec_from_file_location(
+                "node_control", os.path.join(_here, "node-control.py")
+            )
+            _mod = importlib.util.module_from_spec(_spec)
+            _spec.loader.exec_module(_mod)
+            self.control = _mod.get_control(
+                on_event=lambda k, n, a, ok, m: GLib.idle_add(
+                    self._ctl_event, k, n, a, ok, m
+                )
+            )
+        except Exception as e:
+            log(f"node-control unavailable: {e}")
+
         # auto-heal state
         self._consecutive_failures = 0
         self._is_recovering = False
@@ -253,6 +278,7 @@ class NodeMonitor:
         self._alarm_sent = False
         self._last_alert_time = 0
         self._restart_times = []  # timestamps of restarts (for loop detection)
+        self._restart_in_flight = False  # dedup guard: only one restart cycle at a time
         self._mem_high_count = 0  # consecutive high memory samples
         self._disk_pct_history = []  # last 10 disk samples for trend
 
@@ -406,6 +432,15 @@ class NodeMonitor:
         if self._stop:
             Gtk.main_quit()
             return False
+        # Обновляем состояние компонентов раз в 10 с: snapshot() дёргает
+        # systemctl/docker, чаще это лишняя нагрузка на 3.2 ГБ RAM.
+        now = time.time()
+        if self.control is not None and now - getattr(self, "_last_ctl_refresh", 0) > 10:
+            self._last_ctl_refresh = now
+            try:
+                self._ctl_refresh_state()
+            except Exception as e:
+                log(f"ctl state refresh failed: {e}")
         return True
 
     # ── indicator (AyatanaAppIndicator3 — works on Wayland) ────
@@ -433,6 +468,12 @@ class NodeMonitor:
             (None, None),
             ("📡  Restart xray", self._do_restart_xray),
             ("🐳  Restart Docker Stack", self._do_restart_docker),
+            (None, None),
+            ("🎛  Control Panel", self._do_show_control),
+            ("⏹  Stop Everything", self._on_stop_all),
+            ("💤  Suspend Daemon", self._on_suspend_daemon),
+            ("🔀  Rotate xray Server", self._on_rotate),
+            ("🔄  Update Subscription", self._on_sub_update),
             (None, None),
             ("📋  Show Logs", self._do_show_logs),
             (None, None),
@@ -472,6 +513,194 @@ class NodeMonitor:
         self.indicator.set_label("", "")
         self.indicator.set_title(tip)
 
+    # ── вкладка управления компонентами ────────────────────────────
+    def _make_control_tab(self):
+        """Ряд кнопок ON/OFF/TEST на каждый компонент + индикатор состояния."""
+        vb = Gtk.VBox(spacing=6)
+        vb.set_border_width(6)
+
+        head = Gtk.Label()
+        head.set_markup("<b>Component control</b>  |  <small>ON · OFF · TEST per part</small>")
+        vb.pack_start(head, False, False, 2)
+
+        grid = Gtk.Grid(row_spacing=4, column_spacing=4)
+        vb.pack_start(grid, False, False, 2)
+
+        self._ctl_status_labels = {}
+        self._ctl_buttons = {}
+
+        header_row = 0
+        for col, title in enumerate(["Component", "State", "ON", "OFF", "TEST"]):
+            lbl = Gtk.Label(label=f"<b>{title}</b>")
+            lbl.set_markup(f"<b>{title}</b>")
+            grid.attach(lbl, col, header_row, 1, 1)
+
+        row = 1
+        for name in ("daemon", "xray", "docker", "monitor"):
+            comp = self.control.components.get(name)
+            if not comp:
+                continue
+            name_lbl = Gtk.Label(label=comp.label)
+            name_lbl.set_halign(Gtk.Align.START)
+            grid.attach(name_lbl, 0, row, 1, 1)
+
+            state_lbl = Gtk.Label(label="…")
+            state_lbl.set_halign(Gtk.Align.START)
+            grid.attach(state_lbl, 1, row, 1, 1)
+            self._ctl_status_labels[name] = state_lbl
+
+            for col, (action, text) in enumerate(
+                [("start", "ON"), ("stop", "OFF"), ("test", "TEST")], start=2
+            ):
+                btn = Gtk.Button(label=text)
+                btn.set_sensitive(True)
+                btn.connect("clicked", self._on_ctl_clicked, name, action)
+                grid.attach(btn, col, row, 1, 1)
+                self._ctl_buttons.setdefault(name, {})[action] = btn
+            row += 1
+
+        # ── глобальные действия ─────────────────────────────────────
+        vb.pack_start(Gtk.HSeparator(), False, False, 4)
+
+        gr = Gtk.Grid(row_spacing=4, column_spacing=4)
+        vb.pack_start(gr, False, False, 2)
+
+        def add(col, row_, label, cb, tip=None):
+            b = Gtk.Button(label=label)
+            b.connect("clicked", cb)
+            if tip:
+                b.set_tooltip_text(tip)
+            gr.attach(b, col, row_, 1, 1)
+            return b
+
+        add(0, 0, "⏹  Stop Everything", self._on_stop_all,
+            "daemon + xray + docker, prune, drop_caches")
+        add(1, 0, "💤  Suspend Daemon", self._on_suspend_daemon,
+            "выгрузить демона до следующей перезагрузки")
+        add(2, 0, "🔄  Rotate xray", self._on_rotate,
+            "переключиться на следующий сервер из топа")
+
+        add(0, 1, "🔄  Update Subscription", self._on_sub_update,
+            "протокол: скачать → протестировать → топ-100 → применить")
+        add(1, 1, "🧪  Test Subscription", self._on_sub_update_dry,
+            "то же, но без применения (dry-run)")
+        add(2, 1, "📊  Top Servers", self._on_show_servers,
+            "текущий топ-100 с RTT и скоростью")
+
+        # ── лог событий управления ──────────────────────────────────
+        vb.pack_start(Gtk.HSeparator(), False, False, 4)
+        events_lbl = Gtk.Label(label="Control events appear here and in Telegram")
+        events_lbl.set_halign(Gtk.Align.START)
+        vb.pack_start(events_lbl, False, False, 2)
+
+        self._ctl_events = Gtk.TextView()
+        self._ctl_events.set_editable(False)
+        self._ctl_events.set_monospace(True)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.set_size_request(-1, 140)
+        sw.add(self._ctl_events)
+        vb.pack_start(sw, True, True, 0)
+
+        self._ctl_refresh_state()
+        return {"vb": vb}
+
+    def _ctl_refresh_state(self):
+        """Обновляет индикаторы состояния (вызывается из тика)."""
+        if not hasattr(self, "_ctl_status_labels"):
+            return
+        try:
+            snap = self.control.snapshot()
+        except Exception:
+            return
+        for name, lbl in self._ctl_status_labels.items():
+            st = snap.get(name, "?")
+            colour = "#2e7d32" if st in ("running", "4 up") else (
+                "#ef6c00" if st in ("no socks", "suspended") else "#c62828"
+            )
+            lbl.set_markup(f"<span foreground='{colour}'>{st}</span>")
+
+    def _ctl_log(self, line):
+        try:
+            buf = self._ctl_events.get_buffer()
+            buf.insert(buf.get_end_iter(), line + "\n")
+        except Exception:
+            pass
+
+    # ── обработчики кнопок управления ─────────────────────────────
+    def _on_ctl_clicked(self, _btn, name, action):
+        self._ctl_log(f"→ {name} {action}…")
+        self.control.act(name, action)
+
+    def _on_stop_all(self, _btn):
+        self._ctl_log("→ stop everything…")
+        self.control.stop_all()
+
+    def _on_suspend_daemon(self, _btn):
+        self._ctl_log("→ suspend daemon until reboot…")
+        c = self.control.components.get("daemon")
+        if not c:
+            return
+
+        def run():
+            ok, msg = c.suspend_until_reboot()
+            GLib.idle_add(lambda: self._ctl_event("suspend", "daemon", "suspend", ok, msg))
+        threading.Thread(target=run, daemon=True).start()
+
+    def _on_rotate(self, _btn):
+        self._ctl_log("→ rotate xray…")
+        self.control.xray_rotate()
+
+    def _on_sub_update(self, _btn):
+        self._ctl_log("→ subscription update protocol…")
+        self.control.sub_update(apply_new=True)
+
+    def _on_sub_update_dry(self, _btn):
+        self._ctl_log("→ subscription dry-run…")
+        self.control.sub_update(apply_new=False)
+
+    def _on_show_servers(self, _btn):
+        self._ctl_log("→ loading top servers…")
+
+        def run():
+            path = os.path.expanduser("~/bin/v2ray/servers.json")
+            try:
+                with open(path) as f:
+                    servers = json.load(f)
+            except Exception as e:
+                GLib.idle_add(lambda: self._show_dialog("Top Servers", f"нет списка: {e}"))
+                return
+            lines = [f"Топ-{len(servers)} серверов (быстрые → медленные):", ""]
+            for i, s in enumerate(servers[:100], 1):
+                spd = s.get("speed_bps", 0)
+                spd_txt = f"{spd/1e6:.2f} МБ/с" if spd else "—"
+                lines.append(
+                    f"{i:3}. {s.get('rtt_ms', 0):7.1f} мс  {spd_txt:>10}  "
+                    f"{s.get('scheme', '?'):8} {s['host']}:{s['port']}"
+                )
+            GLib.idle_add(
+                lambda: self._show_dialog("Top Servers", "\n".join(lines))
+            )
+        threading.Thread(target=run, daemon=True).start()
+
+    def _ctl_event(self, kind, name, action, ok, msg):
+        """Событие управления: в UI, в лог и в Telegram."""
+        icon = {"start": "…", "done": "✅", "error": "❌", "progress": "·", "busy": "⏳"}.get(kind, "·")
+        line = f"{icon} {name}/{action}: {msg}"
+        self._ctl_log(line)
+        try:
+            lbl = self._ctl_status_labels.get(name)
+            if lbl is not None and kind == "done":
+                self._ctl_refresh_state()
+        except Exception:
+            pass
+        # В Telegram — только завершённые операции и ошибки.
+        if kind in ("done", "error"):
+            text = f"🎛 node-control: {name} {action} — {'ok' if ok else 'FAIL'}\n{msg}"
+            if len(text) > 3500:
+                text = text[:3500] + "…"
+            _send_tg_alert(text)
+
     # ── main window ────────────────────────────────────────────
     def _build_window(self):
         self.window = Gtk.Window(title="PX Node Monitor")
@@ -506,6 +735,9 @@ class NodeMonitor:
 
         self.tab_logs = self._make_logs_tab()
         self.notebook.append_page(self.tab_logs["vb"], Gtk.Label(label="📋 Logs"))
+
+        self.tab_control = self._make_control_tab()
+        self.notebook.append_page(self.tab_control["vb"], Gtk.Label(label="🎛 Control"))
 
         self.statusbar = Gtk.Label()
         self.statusbar.set_halign(Gtk.Align.START)
@@ -805,7 +1037,7 @@ class NodeMonitor:
         disk_pct = data["sys"].get("disk_percent", 0)
         if disk_pct > 90 and disk_pct - self._last_disk_alert_pct > 2:
             self._last_disk_alert_pct = disk_pct
-            _send_tg_alert(f"⚠️ node-monitor: disk at {disk_pct:.0f}% ({fmt_bytes(data['sys'].get('disk_used',0))} used)")
+            self._send_tg_alert_cooldown(f"⚠️ node-monitor: disk at {disk_pct:.0f}% ({fmt_bytes(data['sys'].get('disk_used',0))} used)")
             GLib.idle_add(lambda: self._notify("Disk Alert", f"Disk at {disk_pct:.0f}%"))
         elif disk_pct < 85:
             self._last_disk_alert_pct = 0
@@ -818,14 +1050,14 @@ class NodeMonitor:
             trend = self._disk_pct_history[-1] - self._disk_pct_history[0]
             rate_per_hour = trend * 6  # 10min interval * 6 = 1h
             if rate_per_hour > 2:
-                _send_tg_alert(f"⚠️ node-monitor: disk growing {rate_per_hour:.1f}%/hour ({disk_pct:.0f}%)")
+                self._send_tg_alert_cooldown(f"⚠️ node-monitor: disk growing {rate_per_hour:.1f}%/hour ({disk_pct:.0f}%)")
 
         # ── I8: memory threshold check ──────────────────────────
         mem_pct = data["sys"].get("mem_percent", 0)
         if mem_pct > 90:
             self._mem_high_count += 1
             if self._mem_high_count >= 3:  # 3 consecutive checks (~30min)
-                _send_tg_alert(f"⚠️ node-monitor: memory >90% for {self._mem_high_count} checks ({mem_pct:.0f}%)")
+                self._send_tg_alert_cooldown(f"⚠️ node-monitor: memory >90% for {self._mem_high_count} checks ({mem_pct:.0f}%)")
         else:
             self._mem_high_count = 0
 
@@ -836,8 +1068,14 @@ class NodeMonitor:
                 if "Unhealthy" in status or "exited" in status.lower():
                     if name not in self._docker_unhealthy:
                         log(f"docker {name} unhealthy ({status}), restarting…")
-                        _send_tg_alert(f"⚠️ docker {name} unhealthy, restarting")
-                        subprocess.run(["docker", "restart", name], capture_output=True)
+                        self._send_tg_alert_cooldown(f"⚠️ docker {name} unhealthy, restarting")
+                        try:
+                            subprocess.run(
+                                ["docker", "restart", name],
+                                capture_output=True, timeout=60,
+                            )
+                        except subprocess.TimeoutExpired:
+                            log(f"docker restart {name} timed out after 60s")
                         self._docker_unhealthy.add(name)
                 else:
                     self._docker_unhealthy.discard(name)
@@ -1079,6 +1317,19 @@ class NodeMonitor:
         threading.Thread(target=run, daemon=True).start()
 
     def _do_restart_with_verify(self):
+        # Guard: the 3-failures counter (main poller) and the bridge>5min timer
+        # (C3) can fire in the same cycle. Without this, both called
+        # systemctl restart concurrently -> double restart, spurious alerts.
+        if self._restart_in_flight:
+            log("auto-heal: restart already in flight, skipping duplicate trigger")
+            return
+        self._restart_in_flight = True
+        # NOTE: the flag is released by the restart worker thread, not here —
+        # this method returns as soon as the thread is spawned. Early-return
+        # paths below (restart loop / maintenance) release it themselves.
+        self._restart_with_verify_locked()
+
+    def _restart_with_verify_locked(self):
         # Track restart for loop detection
         now = time.time()
         self._restart_times.append(now)
@@ -1089,6 +1340,7 @@ class NodeMonitor:
             _send_tg_alert(f"⚠️ RESTART LOOP detected: {recent} restarts in 1h, pausing auto-heal for 30min")
             self._is_recovering = False
             self._consecutive_failures = 0
+            self._restart_in_flight = False
             time.sleep(1800)
             return
         # Check maintenance mode touch-file
@@ -1097,13 +1349,21 @@ class NodeMonitor:
             log("auto-heal: maintenance mode active, skipping restart")
             self._is_recovering = False
             self._consecutive_failures = max(0, self._consecutive_failures - 1)
+            self._restart_in_flight = False
             return
         def run():
             log("auto-restart: restarting via systemctl…")
-            subprocess.run(["systemctl", "--user", "restart", "simplex-node.service"], capture_output=True, timeout=30)
-            GLib.idle_add(lambda: self._notify("simplex-node", "auto-restart initiated"))
-            time.sleep(10)
-            self._verify_recovery()
+            try:
+                subprocess.run(["systemctl", "--user", "restart", "simplex-node.service"], capture_output=True, timeout=30)
+                GLib.idle_add(lambda: self._notify("simplex-node", "auto-restart initiated"))
+                time.sleep(10)
+                self._verify_recovery()
+            except subprocess.TimeoutExpired:
+                log("auto-heal: systemctl restart timed out after 30s")
+            finally:
+                # release the guard only when the whole restart+verify cycle is
+                # really over, not when the thread was merely spawned
+                self._restart_in_flight = False
         threading.Thread(target=run, daemon=True).start()
 
     def _verify_recovery(self):
@@ -1164,6 +1424,19 @@ class NodeMonitor:
                 GLib.idle_add(lambda: self._notify("simplex-node", "docker compose dir not found"))
         threading.Thread(target=run, daemon=True).start()
 
+    def _do_show_control(self):
+        """Открывает вкладку управления компонентами."""
+        try:
+            self._show_window()
+            for i in range(self.notebook.get_n_pages()):
+                lbl = self.notebook.get_tab_label(self.notebook.get_nth_page(i))
+                if lbl and "Control" in lbl.get_text():
+                    self.notebook.set_current_page(i)
+                    break
+            self._ctl_refresh_state()
+        except Exception as e:
+            log(f"show control error: {e}")
+
     def _do_show_logs(self):
         try:
             self._show_window()
@@ -1207,7 +1480,23 @@ class NodeMonitor:
     def _do_cleanup(self):
         def run():
             log("running disk cleanup…")
-            result = fetch_json("/api/admin/disk-cleanup")
+            # endpoint is POST-only (see internal/api/admin.go route table);
+            # a GET returns 405 and the cleanup silently never ran
+            try:
+                opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+                req = urllib.request.Request(
+                    API.rstrip("/") + "/api/admin/disk-cleanup",
+                    data=b"", method="POST",
+                )
+                resp = opener.open(req, timeout=120)
+                result = json.loads(resp.read().decode())
+            except urllib.error.HTTPError as e:
+                try:
+                    result = json.loads(e.read().decode())
+                except Exception:
+                    result = {"_error": f"http {e.code}"}
+            except Exception as e:
+                result = {"_error": str(e)}
             msg = json.dumps(result, indent=2, ensure_ascii=False)
             GLib.idle_add(lambda: self._show_dialog("Disk Cleanup Result", msg))
         threading.Thread(target=run, daemon=True).start()
