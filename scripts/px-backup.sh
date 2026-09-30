@@ -146,14 +146,21 @@ cmd_save() {
 
   # 2. Конфиг ноды. Копируем дважды: рабочий и шаблон, чтобы восстановить
   #    не только текущие значения, но и саму возможность настройки.
+  #
+  #    Рабочий конфиг кладём под ФИКСИРОВАННЫМ именем simplex-node.json,
+  #    а не под его собственным basename: при CONFIG_FILE=elsewhere.json
+  #    он попадал в бэкап как elsewhere.json, и verify/restore его не
+  #    находили — бэкап выглядел исправным, а восстановление молчало
+  #    ничего не делать. Имя в бэкапе не должно зависеть от того,
+  #    как файл назван на диске.
   if [ -f "$CONFIG_FILE" ]; then
     mkdir -p "$dest/config"
-    cp -a "$CONFIG_FILE" "$dest/config/"
+    cp -a "$CONFIG_FILE" "$dest/config/simplex-node.json"
     [ -f "$REPO/deploy/simplex-node.json.template" ] && \
       cp -a "$REPO/deploy/simplex-node.json.template" "$dest/config/"
-    ok "конфиг ноды"
+    ok "конфиг ноды → config/simplex-node.json"
   else
-    warn "конфиг ноды не найден ($CONFIG_FILE)"
+    warn "конфиг ноды не найден ($CONFIG_FILE) — нода восстановится с настройками по умолчанию"
   fi
 
   # 3. Состояние ноды: кошельки, чат, транспорт. Без этого нода поднимется,
@@ -321,7 +328,16 @@ cmd_restore() {
   if [ -f "$src/config/simplex-node.json" ]; then
     say "Восстанавливаю конфиг ноды"
     if [ "$DRY_RUN" = 1 ]; then info "DRY: скопирую в $CONFIG_FILE"
-    else mkdir -p "$(dirname "$CONFIG_FILE")"; cp -a "$src/config/simplex-node.json" "$CONFIG_FILE"; ok "конфиг восстановлен"; fi
+    elif mkdir -p "$(dirname "$CONFIG_FILE")" \
+      && cp -a "$src/config/simplex-node.json" "$CONFIG_FILE"; then
+      # Проверяем ФАКТ, а не код возврата: mkdir может создать каталог,
+      # а cp молча упасть (нет места, прав, битый источник) — и раньше
+      # скрипт в этом случае рапортовал «конфиг восстановлен».
+      if [ -f "$CONFIG_FILE" ]; then ok "конфиг восстановлен"
+      else err "конфиг НЕ восстановлен — не могу записать $CONFIG_FILE"; return 1; fi
+    else
+      err "не удалось создать $(dirname "$CONFIG_FILE") или скопировать конфиг"; return 1
+    fi
   fi
 
   if [ -d "$src/coturn" ] && [ -d "$DOCKER_DIR/coturn" ]; then

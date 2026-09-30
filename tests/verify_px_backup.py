@@ -62,14 +62,18 @@ def sandbox():
     return box, hs, data
 
 
-def run(box, hs, data, *args, dry=False, script=SCRIPT):
-    env = dict(os.environ, BACKUP_ROOT=os.path.join(box, "backups"), HS_DIR=hs,
-               DATA_DIR=data, CONFIG_FILE=os.path.join(data, "simplex-node.json"),
-               REPO=REPO, DOCKER_DIR=os.path.join(box, "docker"))
+def run(box, hs, data, *args, dry=False, script=SCRIPT, env=None):
+    base = dict(os.environ, BACKUP_ROOT=os.path.join(box, "backups"), HS_DIR=hs,
+                DATA_DIR=data, CONFIG_FILE=os.path.join(data, "simplex-node.json"),
+                REPO=REPO, DOCKER_DIR=os.path.join(box, "docker"))
     if dry:
-        env["DRY_RUN"] = "1"
+        base["DRY_RUN"] = "1"
+    base.update(env or {})
+    # env=base, а не env=env: иначе subprocess наследует окружение теста
+    # целиком, BACKUP_ROOT/HS_DIR/DATA_DIR не применяются, и скрипт
+    # пишет в РЕАЛЬНЫ ~/A1-backups вместо песочницы.
     p = subprocess.run(["bash", script, *args], capture_output=True, text=True,
-                       env=env, timeout=180)
+                       env=base, timeout=180)
     return p
 
 
@@ -171,6 +175,29 @@ try:
     check(oct(os.stat(os.path.join(d, "coturn", "turn_key.pem")).st_mode & 0o777)
           == "0o600", "coturn-ключ 600")
     check(run(box, hs, data, "verify", d).returncode == 0, "полный бэкап проходит verify")
+finally:
+    shutil.rmtree(box, ignore_errors=True)
+
+# ── [F2] имя конфига в бэкапе фиксировано ───────────────────────────────────
+# Найдено ad-hoc-проверкой: при CONFIG_FILE=elsewhere.json конфиг
+# копировался под своим basename, verify/restore его не находили, а
+# бэкап выглядел исправным. Имя в бэкапе не должно зависеть от того,
+# как файл назван на диске.
+print("[F2] конфиг в бэкапе всегда simplex-node.json")
+box, hs, data = sandbox()
+try:
+    alt = os.path.join(box, "elsewhere.json")
+    with open(alt, "w") as f:
+        f.write('{"marker":"ALT"}')
+    run(box, hs, data, "save", env={"CONFIG_FILE": alt})
+    cd = os.path.join(first_backup(box), "config")
+    saved = os.path.join(cd, "simplex-node.json")
+    check(os.path.isfile(saved), "конфиг сохранён под фиксированным именем")
+    check(not os.path.exists(os.path.join(cd, "elsewhere.json")),
+          "basename исходного файла не утёк в имя бэкапа")
+    p = run(box, hs, data, "verify", first_backup(box))
+    check("нет конфига ноды" not in p.stdout,
+          "verify находит конфиг независимо от имени на диске")
 finally:
     shutil.rmtree(box, ignore_errors=True)
 
@@ -329,17 +356,42 @@ try:
     finally:
         shutil.rmtree(b, ignore_errors=True)
 
+    # K5: вернуть basename → verify перестанет находить конфиг.
+    open(mut, "w", encoding="utf-8").write(orig)
+    m5 = orig.replace('cp -a "$CONFIG_FILE" "$dest/config/simplex-node.json"',
+                      'cp -a "$CONFIG_FILE" "$dest/config/"')
+    check(m5 != orig, "K5: cp с фиксированным именем найден")
+    open(mut, "w", encoding="utf-8").write(m5)
+    b, h, d_ = sandbox()
+    try:
+        alt = os.path.join(b, "elsewhere.json")
+        with open(alt, "w") as f:
+            f.write('{"m":"ALT"}')
+        run(b, h, d_, "save", script=mut, env={"CONFIG_FILE": alt})
+        p = run(b, h, d_, "verify", first_backup(b), script=mut)
+        check("нет конфига ноды" in p.stdout,
+              "K5: при basename verify не находит конфиг — проверка ловит")
+    finally:
+        shutil.rmtree(b, ignore_errors=True)
+
     # K4: вернуть неверный путь конфига → save перестанет его копировать.
     open(mut, "w", encoding="utf-8").write(orig)
     # Первая версия мутировала ЗНАЧЕНИЕ CONFIG_FILE — но run() всегда
     # передаёт CONFIG_FILE через ENV, поэтому подмена не влияла ни на что
     # и проверка падала на корректном коде. Мутировать нужно ТО, что
     # используется, когда переменной нет: здесь это путь к конфигу.
+    # Мутировать ИНИЦИАЛИЗАЦИЮ CONFIG_FILE бессмысленно: run() всегда
+    # передаёт CONFIG_FILE через ENV, и подстановка ${CONFIG_FILE:-...}
+    # не срабатывает — мутация ничего не меняла, и проверка падала бы
+    # на корректном коде. Предмет мутации — код, который РЕШАЕТ, брать
+    # ли конфиг: условие существования и сам cp.
     m4 = orig.replace('if [ -f "$CONFIG_FILE" ]; then',
                       'if [ -f "$HOME/.config/simplex-node/simplex-node.json" ]; then')
-    m4 = m4.replace('cp -a "$CONFIG_FILE" "$dest/config/"',
-                    'cp -a "$HOME/.config/simplex-node/simplex-node.json" "$dest/config/"')
-    check(m4 != orig, "K4: путь конфига в save найден")
+    m4 = m4.replace('cp -a "$CONFIG_FILE" "$dest/config/simplex-node.json"',
+                    'cp -a "$HOME/.config/simplex-node/simplex-node.json" '
+                    '"$dest/config/simplex-node.json"')
+    check(m4 != orig, "K4: условие и cp конфига найдены")
+    check('if [ -f "$HOME/.config' in m4, "K4: подмена действительно применена")
     open(mut, "w", encoding="utf-8").write(m4)
     b, h, d_ = sandbox()
     try:
