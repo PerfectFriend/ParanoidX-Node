@@ -1,0 +1,14 @@
+[Unit]
+Description=ParanoidX VMess Server (xray-core)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=@HOME@/bin/v2ray/xray run -c @HOME@/.local/share/simplex-node/vmess/server.json
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:@HOME@/.local/share/simplex-node/logs/vmess-server.log
+StandardError=append:@HOME@/.local/share/simplex-node/logs/vmess-server.log
+
+[Install]
+WantedBy=default.target

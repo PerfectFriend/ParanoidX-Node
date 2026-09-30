@@ -1,0 +1,30 @@
+[Unit]
+Description=ParanoidX Telegram royal public-services bot
+After=network-online.target ParanoidX-dashboard.service
+Wants=network-online.target
+PartOf=ParanoidX.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+WorkingDirectory=@REPO@
+Environment=HOME=@HOME@
+Environment=USER=@USER@
+ExecStart=/usr/bin/python3 @REPO@/scripts/telegram_royal_bot.py
+Restart=always
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+StandardOutput=journal
+StandardError=journal
+
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+NoNewPrivileges=true
+ReadWritePaths=@HOME@
+
+[Install]
+WantedBy=ParanoidX.target

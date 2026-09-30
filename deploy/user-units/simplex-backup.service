@@ -1,0 +1,8 @@
+[Unit]
+Description=simplex-node backup to USB
+
+[Service]
+Type=oneshot
+ExecStart=%h/simplex-node/scripts/backup-to-usb.sh --path=/run/media/tomas/BACKUP/backups
+StandardOutput=append:%h/backup-cron.log
+StandardError=append:%h/backup-cron.log

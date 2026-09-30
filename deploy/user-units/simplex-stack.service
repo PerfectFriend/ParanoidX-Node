@@ -1,0 +1,16 @@
+[Unit]
+Description=Simplex Node Stack Launcher (User)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=@HOME@/launch-simplex-stack.sh start
+ExecStop=@HOME@/launch-simplex-stack.sh stop
+WorkingDirectory=@HOME@/simplex-node
+
+[Install]
+WantedBy=default.target
+EOF
+chmod 644 @HOME@/.config/systemd/user/simplex-stack.service

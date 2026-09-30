@@ -1,0 +1,32 @@
+[Unit]
+Description=ParanoidX xray subscription refresh (test → top-100 → apply)
+Documentation=file://@HOME@/simplex-node/xray-sub.py
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# КРИТИЧНО: KillMode=process, а НЕ control-group.
+# Протокол в конце запускает xray через start_new_session=True — он выходит
+# из cgroup сервиса, но с KillMode=control-group systemd всё равно убивал его
+# при завершении oneshot. Итог: подписка отрабатывала, конфиг применялся,
+# xray стартовал — и умирал через секунду вместе с сервисом. Нода оставалась
+# без прокси. Проверено вручную: config applied=true, socks_alive=true,
+# затем процесс отсутствовал.
+KillMode=process
+WorkingDirectory=@HOME@/simplex-node
+# LKG-подход: xray-sub.py сначала берёт последний рабочий конфиг, потом в
+# фоне тестирует подписки и применяет топ только после успешной проверки.
+# Поэтому отдельный xray-запуск здесь НЕ нужен — этим занимается
+# launch-node.sh при старте ноды.
+ExecStart=/usr/bin/python3 @HOME@/simplex-node/xray-sub.py update
+# 900 с = 15 мин. Полный проход: 3 500 кандидатов, пинг всех + замер
+# скорости через отдельный xray на каждом узле шортлиста.
+TimeoutStartSec=1800
+KillSignal=SIGTERM
+SuccessExitStatus=0
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

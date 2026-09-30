@@ -1,0 +1,17 @@
+[Unit]
+Description=ParanoidX post-reboot restore
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=@USER@
+Group=@USER@
+WorkingDirectory=@REPO@
+Environment=HOME=@HOME@
+Environment=USER=@USER@
+ExecStart=@REPO@/scripts/post-reboot-restore.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -47,6 +47,11 @@ USR_LIST=(node-monitor.service simplex-node.service px-xray-refresh.service
 
 DRY_RUN="${DRY_RUN:-0}"
 ASSUME_YES="${ASSUME_YES:-0}"
+# --report: сохранить полный лог и напечатать путь. Специально НЕ
+# подавляет ошибки: на первом цикле репликации install ОБЯЗАН упасть,
+# и падение с логом — это ровно тот отчёт, который нужен для починки.
+# На рабочем хосте оставлять install с --report нельзя: юнит не стартует.
+REPORT="${REPORT:-}"
 
 say()  { printf '\n\033[1;36m▸ %s\033[0m\n' "$*"; }
 ok()   { printf '  \033[32mOK\033[0m   %s\n' "$*"; }
@@ -215,23 +220,37 @@ EOF
 }
 
 # ── install: развернуть на новом хосте ─────────────────────────────────────
-# Переписывает пути /home/tomas → реальный home нового хоста. Без этого
-# 15 из 16 юнитов не запустятся.
+# Переписывает шаблон юнита под этот host.
+#
+# В git юниты лежат ШАБЛОНАМИ: @HOME@, @REPO@, @USER@. Так они portable
+# сразу. Но prepare может положить в пакет СЫРЫЕ юниты, снятые с
+# /etc/systemd/system старого хоста, где вместо @HOME@ — /home/tomas.
+# Поэтому обрабатываем оба вида: сначала плейсхолдеры, потом старый путь.
 rewrite_paths() {
   local f="$1"
-  # 1) наш home → home нового хоста
+  # 1) плейсхолдеры шаблона (порядок важен: @REPO@ длиннее @HOME@)
   sed -i \
-    -e "s#/home/tomas#${HOME_DIR}#g" \
-    -e "s#${REPO_OLD:-/home/tomas/ParanoidX}#${REPO}#g" \
+    -e "s#@REPO@#${REPO}#g" \
+    -e "s#@HOME@#${HOME_DIR}#g" \
+    -e "s#@USER@#${USER_NAME}#g" \
     "$f"
-  # 2) типичные варианты имени репозитория
-  sed -i -e "s#${HOME_DIR}/simplex-node#${REPO}#g" \
-         -e "s#${HOME_DIR}/ParanoidX#${REPO}#g" "$f"
-  # 3) типичные варианты имени пользователя
-  sed -i "s#\bUser=tomas\b#User=${USER_NAME}#g; s#\bGroup=tomas\b#Group=${USER_NAME}#g" "$f"
-  sed -i "s#\bHOME=/home/tomas\b#HOME=${HOME_DIR}#g; s#\bUSER=tomas\b#USER=${USER_NAME}#g" "$f"
-  # 4) путь к боту opencode-tg-bot, если он где-то зашит
-  sed -i "s#${HOME_DIR}/.config/opencode-tg-bot#${HOME_DIR}/.config/opencode-tg-bot#g" "$f"
+  # 2) старые абсолютные пути — если юнит снят с чужого хоста
+  sed -i \
+    -e "s#/home/tomas/ParanoidX#${REPO}#g" \
+    -e "s#/home/tomas/simplex-node#${REPO}#g" \
+    -e "s#/home/tomas#${HOME_DIR}#g" \
+    -e "s#\bUser=tomas\b#User=${USER_NAME}#g" \
+    -e "s#\bGroup=tomas\b#Group=${USER_NAME}#g" \
+    -e "s#\bUSER=tomas\b#USER=${USER_NAME}#g" \
+    "$f"
+  # 3) единичная проверка: не осталось ли неизвестных плейсхолдеров
+  if grep -q '@[A-Z_]*@' "$f"; then
+    local left
+    left=$(grep -o '@[A-Z_]*@' "$f" | sort -u | tr '\n' ' ')
+    err "в $f остались неподставленные плейсхолдеры: $left"
+    return 1
+  fi
+  return 0
 }
 
 cmd_install() {
@@ -239,12 +258,28 @@ cmd_install() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --from) src="${2:-}"; shift 2 ;;
+      --report) REPORT="${2:-$HOME/px-install-report.log}"; shift 2 ;;
       *) shift ;;
     esac
   done
+  # Весь вывод install — в лог И в stdout, чтобы отчёт можно было
+  # переслать одним куском.
+  if [ -n "$REPORT" ]; then
+    mkdir -p "$(dirname "$REPORT")"
+    exec > >(tee "$REPORT") 2>&1
+    say "Лог установки: $REPORT"
+  fi
   say "Установка ноды на этот host"
   info "пользователь: $USER_NAME   home: $HOME_DIR   репозиторий: $REPO"
-  [ -n "$src" ] || die "укажи --from DIR (см. prepare)"
+  # --from НЕ обязателен. Пакет нужен только чтобы перенести onion-ключи,
+  # состояние ноды и TLS-сертификаты. Для новой ноды со своими ключами
+  # достаточно клона репозитория: юниты и бинарники берутся из git.
+  if [ -n "$src" ]; then
+    info "пакет: $src"
+  else
+    info "пакета нет — режим НОВОЙ ноды: ключи сгенерируются заново"
+    info "и состояние будет пустым. Если нужны старые адреса и данные — укажи --from."
+  fi
 
   # 0. Страховка ДО любых изменений.
   local stamp rollback
@@ -287,7 +322,7 @@ cmd_install() {
   # 4. Конфиг — НЕ перезаписываем молча.
   if [ -f "$CONFIG_FILE" ]; then
     warn "конфиг уже есть — не трогаю: $CONFIG_FILE"
-  elif [ -f "$src/node-backup/config/simplex-node.json" ]; then
+  elif [ -n "$src" ] && [ -f "$src/node-backup/config/simplex-node.json" ]; then
     if [ "$DRY_RUN" = 1 ]; then info "DRY: скопирую конфиг"
     else cp -a "$src/node-backup/config/simplex-node.json" "$CONFIG_FILE"; ok "конфиг восстановлен"; fi
   elif [ -f "$REPO/deploy/simplex-node.json.template" ]; then
@@ -307,7 +342,7 @@ cmd_install() {
 
   # 5. Бинарники: из пакета или сборкой.
   say "Бинарники"
-  if [ -x "$src/bin/ParanoidX" ]; then
+  if [ -n "$src" ] && [ -x "$src/bin/ParanoidX" ]; then
     run cp -a "$src/bin/ParanoidX" "$BIN_DIR/ParanoidX"
     run chmod +x "$BIN_DIR/ParanoidX"
     ok "ParanoidX из пакета"
@@ -317,7 +352,7 @@ cmd_install() {
     run bash -c "cd '$REPO' && go build -o '$BIN_DIR/ParanoidX' ./cmd/ParanoidX/"
     ok "ParanoidX собран"
   fi
-  if [ -x "$src/bin/simplex-chat-island" ]; then
+  if [ -n "$src" ] && [ -x "$src/bin/simplex-chat-island" ]; then
     run cp -a "$src/bin/simplex-chat-island" "$BIN_DIR/"
     run chmod +x "$BIN_DIR/simplex-chat-island"
     ok "simplex-chat-island из пакета"
@@ -335,37 +370,49 @@ cmd_install() {
   else warn "нет deploy/px-docker.sh — Docker-стек не поставить"; fi
 
   # 7. Юниты — с переписыванием путей.
+  # 7. Юниты. Источник — сначала пакет (юниты снятые со СТАРОГО хоста,
+  #    с его путями), потом git-шаблоны. Шаблонов достаточно для чистого
+  #    хоста: install работает и без --from, только с клоном репозитория.
+  install_units() {
+    local kind="$1" src_dir="$2" dst_dir="$3" sudo_needed="$4"
+    local f b n=0
+    for f in "$src_dir"/*; do
+      [ -f "$f" ] || continue
+      b=$(basename "$f")
+      if [ "$DRY_RUN" = 1 ]; then
+        info "DRY: поставлю $dst_dir/$b"
+      else
+        cp "$f" "/tmp/px-unit-$b"
+        rewrite_paths "/tmp/px-unit-$b" || { rm -f "/tmp/px-unit-$b"; n=$((n+1)); continue; }
+        if [ "$sudo_needed" = 1 ]; then
+          runr install -m 0644 "/tmp/px-unit-$b" "$dst_dir/$b"
+        else
+          install -m 0644 "/tmp/px-unit-$b" "$dst_dir/$b"
+        fi
+        rm -f "/tmp/px-unit-$b"
+      fi
+      n=$((n+1))
+    done
+    [ "$n" -gt 0 ] && ok "$kind: обработано $n" || warn "$kind: источник пуст"
+  }
+
   say "Системные юниты (нужен sudo)"
   if [ -d "$src/units/system" ]; then
-    for f in "$src/units/system"/*; do
-      [ -f "$f" ] || continue
-      local b; b=$(basename "$f")
-      if [ "$DRY_RUN" = 1 ]; then info "DRY: поставлю /etc/systemd/system/$b"
-      else
-        cp "$f" "/tmp/$b.new"
-        rewrite_paths "/tmp/$b.new"
-        runr install -m 0644 "/tmp/$b.new" "/etc/systemd/system/$b"
-        rm -f "/tmp/$b.new"
-      fi
-      ok "установлен $b"
-    done
-  else warn "в пакете нет units/system/"; fi
+    install_units "из пакета" "$src/units/system" /etc/systemd/system 1
+  elif [ -d "$SYS_UNITS" ]; then
+    install_units "из git-шаблонов" "$SYS_UNITS" /etc/systemd/system 1
+  else
+    err "нет юнитов: ни в пакете, ни в deploy/system-units"; bad_install=1
+  fi
 
   say "Пользовательские юниты"
   if [ -d "$src/units/user" ]; then
-    for f in "$src/units/user"/*; do
-      [ -f "$f" ] || continue
-      local b; b=$(basename "$f")
-      if [ "$DRY_RUN" = 1 ]; then info "DRY: поставлю ~/.config/systemd/user/$b"
-      else
-        cp "$f" "/tmp/$b.new"
-        rewrite_paths "/tmp/$b.new"
-        install -m 0644 "/tmp/$b.new" "$HOME_DIR/.config/systemd/user/$b"
-        rm -f "/tmp/$b.new"
-      fi
-      ok "установлен $b"
-    done
-  else warn "в пакете нет units/user/"; fi
+    install_units "из пакета" "$src/units/user" "$HOME_DIR/.config/systemd/user" 0
+  elif [ -d "$USER_UNITS" ]; then
+    install_units "из git-шаблонов" "$USER_UNITS" "$HOME_DIR/.config/systemd/user" 0
+  else
+    err "нет юнитов: ни в пакете, ни в deploy/user-units"; bad_install=1
+  fi
 
   # 8. polkit и wrapper.
   say "polkit: правило и wrapper"
@@ -389,19 +436,33 @@ cmd_install() {
   run bash -c "systemctl --user daemon-reload" 
   ok "юниты перечитаны (НЕ запущены)"
 
-  # 10. Инструкция.
-  say "Что дальше — вручную"
-  info "1. Секреты и состояние:"
-  info "     ./scripts/px-backup.sh restore $src/node-backup"
-  info "2. Docker-стек (он поднимет Tor и опубликует адреса):"
+  # 10. Итог и остаток ручной работы.
+  say "Итог установки"
+  if [ -z "${bad_install:-}" ]; then ok "все автоматические шаги выполнены"
+  else err "часть шагов провалилась (строки ОШИБКА выше)"; fi
+
+  say "Что осталось сделать вручную"
+  local step=1
+  if [ -z "$src" ]; then
+    info "$step. Ключи и состояние: НЕ ПЕРЕНЕСЕНЫ — это новая нода со своими адресами"
+    info "   Чтобы перенести старые: ./scripts/px-backup.sh restore <ПАКЕТ>/node-backup"
+    step=2
+  else
+    info "$step. Восстановить состояние и ключи:"
+    info "     ./scripts/px-backup.sh restore $src/node-backup"
+    step=2
+  fi
+  info "$step. Docker-стек (Tor поднимет новые onion-адреса и опубликует их):"
   info "     ./deploy/px-docker.sh install"
-  info "3. Старт:"
+  info "$((step+1)). Старт:"
   info "     sudo systemctl enable --now ParanoidX-dashboard.service"
-  info "4. Проверка:"
+  info "$((step+2)). Проверка:"
   info "     ./deploy/px-migrate-host.sh verify"
   echo
-  warn "Секреты НЕ восстановлены автоматически: onion-ключи меняют адреса."
-  info "Если адреса должны совпасть со старым host — restore обязателен."
+  if [ -n "$REPORT" ]; then
+    ok "лог сохранён: $REPORT"
+    info "пришли его — по нему я починю скрипты под этот host"
+  fi
 }
 
 # ── verify: доказать, что нода работает ────────────────────────────────────

@@ -1,0 +1,14 @@
+[Unit]
+Description=The Isle Flutter client (supervised)
+After=network.target simplex-node.service
+
+[Service]
+Type=simple
+ExecStart=@HOME@/simplex-node/scripts/run-isle-app.sh
+Restart=always
+RestartSec=5
+Environment=DISPLAY=:0
+Environment=GI_TYPELIB_PATH=@HOME@/.local/share/girepository-1.0
+
+[Install]
+WantedBy=default.target

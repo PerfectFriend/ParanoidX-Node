@@ -1,0 +1,16 @@
+[Unit]
+Description=v2rayA Web UI (user service)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=@HOME@/bin/v2ray/v2raya --config @HOME@/.config/v2raya
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:@HOME@/.local/share/simplex-node/logs/v2raya.log
+StandardError=append:@HOME@/.local/share/simplex-node/logs/v2raya.log
+Environment=HOME=@HOME@
+WorkingDirectory=@HOME@
+
+[Install]
+WantedBy=default.target

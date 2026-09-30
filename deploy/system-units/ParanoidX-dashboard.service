@@ -1,0 +1,27 @@
+[Unit]
+Description=ParanoidX dashboard (Go HTTP server on :8080)
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+PartOf=ParanoidX.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@USER@
+WorkingDirectory=@REPO@
+Environment=HOME=@HOME@
+Environment=USER=@USER@
+ExecStartPre=/bin/bash -c 'cp -f @REPO@/docker/dashboard.html @HOME@/.local/share/ParanoidX/dashboard.html 2>/dev/null || true'
+ExecStart=@HOME@/bin/ParanoidX -config @HOME@/.local/share/simplex-node/simplex-node.json
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+NoNewPrivileges=true
+ReadWritePaths=@HOME@
+
+[Install]
+WantedBy=ParanoidX.target

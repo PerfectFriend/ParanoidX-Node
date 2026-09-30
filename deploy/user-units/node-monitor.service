@@ -1,0 +1,31 @@
+[Unit]
+Description=simplex-node system tray monitor
+Documentation=file://@HOME@/simplex-node/node-monitor.py
+After=network.target
+# Привязка к графической сессии вместо WantedBy=default.target.
+# С Linger=yes старый вариант поднимал монитор ДО входа в GNOME — X ещё
+# не был готов, cookie не существовало, GTK падал с кодом 6 (ABRT),
+# systemd исчерпывал 5 попыток и оставлял монитор мёртвым после ребута.
+# Номер DISPLAY не зашит: launcher находит живой X сам.
+PartOf=graphical-session.target
+After=graphical-session.target
+
+# Restart-loop guard: 5 failed starts in 5 min -> give up instead of looping
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=@HOME@/simplex-node/scripts/node-monitor-launch.sh
+WorkingDirectory=@HOME@/simplex-node
+# on-failure, not always: manual "Quit" from the tray menu must stay dead
+Restart=on-failure
+RestartSec=30
+# Launcher сам выставляет DISPLAY/XAUTHORITY/WAYLAND_DISPLAY и ждёт X.
+# TimeoutStartSec не задан: launcher ждёт до 60 с, пока появится сессия.
+Environment=PYTHONUNBUFFERED=1
+Environment=GI_TYPELIB_PATH=@HOME@/.local/share/girepository-1.0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+
+[Install]
+WantedBy=graphical-session.target

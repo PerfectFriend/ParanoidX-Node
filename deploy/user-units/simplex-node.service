@@ -1,0 +1,15 @@
+[Unit]
+Description=simplex-node server
+After=network.target docker.service
+
+[Service]
+Type=simple
+ExecStart=@HOME@/simplex-node/scripts/launch-node.sh
+Restart=always
+RestartSec=10
+Environment=DISPLAY=:0
+Environment=NO_PROXY=localhost,127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.local,.onion,api.telegram.org
+Environment=GI_TYPELIB_PATH=@HOME@/.local/share/girepository-1.0
+
+[Install]
+WantedBy=default.target
