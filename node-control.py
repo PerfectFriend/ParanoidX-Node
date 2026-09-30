@@ -303,32 +303,61 @@ class DockerComponent(Component):
     label = "Docker stack"
     kind = "docker"
 
-    def containers(self):
-        rc, out = _run(["docker", "ps", "-a", "--format", "{{.Names}}"], timeout=20)
+    def containers(self, running_only=True):
+        """Имена контейнеров ParanoidX.
+
+        running_only=True (по умолчанию) берёт только ЗАПУЩЕННЫЕ. Раньше
+        здесь стоял `docker ps -a`, и остановленный контейнер считался
+        работающим: is_running() возвращал True при четырёх мёртвых
+        контейнерах, а cli state писал «docker=4 up». Список для docker
+        start по-прежнему нужен полный — за это отвечает all_containers().
+        """
+        cmd = ["docker", "ps"] + ([] if running_only else ["-a"]) + \
+              ["--format", "{{.Names}}"]
+        rc, out = _run(cmd, timeout=20)
         if rc != 0:
             return []
         return [l.strip() for l in out.splitlines() if l.strip().startswith(DOCKER_PREFIX)]
+
+    def all_containers(self):
+        return self.containers(running_only=False)
 
     def is_running(self):
         return bool(self.containers())
 
     def start(self):
-        names = self.containers()
+        # Список для старта — ВСЕ контейнеры, включая остановленные.
+        # С running-only списком остановленный стек было бы нечего
+        # запускать: start возвращал бы «нет контейнеров ParanoidX»
+        # именно тогда, когда он нужен.
+        names = self.all_containers()
         if not names:
-            return False, "нет контейнеров ParanoidX"
-        rc, out = _run(["docker", "start"] + names, timeout=180)
-        time.sleep(2.0)
-        up = self.containers()
-        return len(up) == len(names), f"запущено {len(up)}/{len(names)}"
+            return False, "нет контейнеров ParanoidX (нужен docker compose up -d)"
+        up_before = set(self.containers())
+        todo = [n for n in names if n not in up_before]
+        if not todo:
+            return True, f"уже работает ({len(names)}/{len(names)})"
+        rc, out = _run(["docker", "start"] + todo, timeout=180)
+        if rc != 0:
+            return False, f"docker start не удался: {out.strip()[:80]}"
+        time.sleep(3.0)
+        up = set(self.containers())
+        still = [n for n in todo if n not in up]
+        if still:
+            return False, (f"запустилось {len(todo) - len(still)}/{len(todo)}; "
+                           f"не поднялись: {', '.join(still)}")
+        return True, f"запущено {len(todo)}/{len(todo)}"
 
     def stop(self):
-        names = self.containers()
+        names = self.containers()          # останавливать нужно только живые
         if not names:
             return True, "нечего останавливать"
         rc, out = _run(["docker", "stop", "-t", "10"] + names, timeout=180)
         time.sleep(1.5)
         left = self.containers()
-        return not left, f"остановлено {len(names) - len(left)}/{len(names)}"
+        if left:
+            return False, f"не остановились: {', '.join(left)}"
+        return True, f"остановлено {len(names)}/{len(names)}"
 
     def test(self):
         names = self.containers()
