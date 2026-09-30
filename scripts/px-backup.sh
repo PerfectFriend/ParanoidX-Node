@@ -19,7 +19,13 @@ set -uo pipefail
 
 REPO="${REPO:-$(cd "$(dirname "$0")/.." && pwd)}"
 DATA_DIR="${DATA_DIR:-$HOME/.local/share/simplex-node}"
-CONFIG_DIR="${CONFIG_DIR:-$HOME/.config/simplex-node}"
+# Конфиг ноды лежит РЯМО в DATA_DIR, а не в ~/.config — так его запускает
+# systemd: ParanoidX-dashboard.service -> -config
+# ~/.local/share/simplex-node/simplex-node.json. Раньше здесь стоял
+# ~/.config/simplex-node/, и save молча писал «конфиг не найден», а
+# verify — «нет конфига ноды»: бэкап без конфига проходил как годный,
+# и на новом host нода поднималась бы с настройками по умолчанию.
+CONFIG_FILE="${CONFIG_FILE:-$DATA_DIR/simplex-node.json}"
 HS_DIR="${HS_DIR:-$REPO/docker/tor/hidden_services}"
 BACKUP_ROOT="${BACKUP_ROOT:-$HOME/A1-backups}"
 DOCKER_DIR="${DOCKER_DIR:-$REPO/docker}"
@@ -140,14 +146,14 @@ cmd_save() {
 
   # 2. Конфиг ноды. Копируем дважды: рабочий и шаблон, чтобы восстановить
   #    не только текущие значения, но и саму возможность настройки.
-  if [ -f "$CONFIG_DIR/simplex-node.json" ]; then
+  if [ -f "$CONFIG_FILE" ]; then
     mkdir -p "$dest/config"
-    cp -a "$CONFIG_DIR/simplex-node.json" "$dest/config/"
+    cp -a "$CONFIG_FILE" "$dest/config/"
     [ -f "$REPO/deploy/simplex-node.json.template" ] && \
       cp -a "$REPO/deploy/simplex-node.json.template" "$dest/config/"
     ok "конфиг ноды"
   else
-    warn "конфиг ноды не найден ($CONFIG_DIR/simplex-node.json)"
+    warn "конфиг ноды не найден ($CONFIG_FILE)"
   fi
 
   # 3. Состояние ноды: кошельки, чат, транспорт. Без этого нода поднимется,
@@ -256,7 +262,7 @@ cmd_verify() {
   else
     err "нет hidden_services/ — onion-ключей в бэкапе нет"; bad=1
   fi
-  [ -f "$src/config/simplex-node.json" ] && ok "конфиг ноды" || warn "нет конфига ноды"
+  if [ -f "$src/config/simplex-node.json" ]; then ok "конфиг ноды"; else warn "нет конфига ноды — нода поднимется с настройками по умолчанию"; fi
   [ -f "$src/MANIFEST.txt" ] && ok "манифест" || warn "нет MANIFEST.txt"
   if [ "$bad" = 0 ]; then ok "бэкап пригоден к восстановлению"; return 0; fi
   err "бэкап НЕ пригоден"; return 1
@@ -288,7 +294,7 @@ cmd_restore() {
   say "Страховочная копия текущего состояния"
   mkdir -p "$stash"; chmod 700 "$stash"
   if [ -d "$HS_DIR" ]; then cp -a "$HS_DIR" "$stash/hidden_services"; ok "текущие onion-ключи → $stash"; fi
-  [ -f "$CONFIG_DIR/simplex-node.json" ] && { mkdir -p "$stash/config"; cp -a "$CONFIG_DIR/simplex-node.json" "$stash/config/"; ok "текущий конфиг сохранён"; }
+  [ -f "$CONFIG_FILE" ] && { mkdir -p "$stash/config"; cp -a "$CONFIG_FILE" "$stash/config/"; ok "текущий конфиг сохранён"; }
   info "откат: cp -a $stash/hidden_services/. $HS_DIR/"
 
   say "Раскладываю onion-ключи"
@@ -314,8 +320,8 @@ cmd_restore() {
 
   if [ -f "$src/config/simplex-node.json" ]; then
     say "Восстанавливаю конфиг ноды"
-    if [ "$DRY_RUN" = 1 ]; then info "DRY: скопирую в $CONFIG_DIR"
-    else mkdir -p "$CONFIG_DIR"; cp -a "$src/config/simplex-node.json" "$CONFIG_DIR/"; ok "конфиг восстановлен"; fi
+    if [ "$DRY_RUN" = 1 ]; then info "DRY: скопирую в $CONFIG_FILE"
+    else mkdir -p "$(dirname "$CONFIG_FILE")"; cp -a "$src/config/simplex-node.json" "$CONFIG_FILE"; ok "конфиг восстановлен"; fi
   fi
 
   if [ -d "$src/coturn" ] && [ -d "$DOCKER_DIR/coturn" ]; then
