@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 
@@ -306,9 +307,14 @@ func TestChatArchiveLifecycle(t *testing.T) {
 	hub := NewChatHub()
 	hub.filePath = dir + "/chat_history.json"
 
-	// Add old messages
-	oldTime := "2025-01-01T00:00:00Z"
-	recentTime := "2026-07-01T00:00:00Z"
+	// Timestamps are derived from time.Now(), not hard-coded. Hard-coded dates
+	// made this test rot: "recentTime" was written as 2026-07-01 when the test
+	// passed, but 90 days of that window have since elapsed, so the "recent"
+	// message crossed the cutoff and began failing (expected 1 archived,
+	// got 2). Relative ages keep the intent — one old, one recent — forever.
+	now := time.Now()
+	oldTime := now.AddDate(0, 0, -200).Format(time.RFC3339)
+	recentTime := now.AddDate(0, 0, -10).Format(time.RFC3339)
 
 	hub.AddMessage(ChatMessage{ID: "old-1", Text: "old message", Timestamp: oldTime})
 	hub.AddMessage(ChatMessage{ID: "recent-1", Text: "recent message", Timestamp: recentTime})
@@ -318,7 +324,8 @@ func TestChatArchiveLifecycle(t *testing.T) {
 		t.Fatalf("archive error: %v", err)
 	}
 	if archived != 1 {
-		t.Fatalf("expected 1 archived message, got %d", archived)
+		t.Fatalf("expected 1 archived message, got %d (old=%s recent=%s now=%s)",
+			archived, oldTime, recentTime, now.Format(time.RFC3339))
 	}
 
 	// Check placeholder
