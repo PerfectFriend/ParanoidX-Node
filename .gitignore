@@ -112,3 +112,7 @@ genkey
 # Скомпилированный Python — мусор, воспроизводится запуском
 __pycache__/
 *.pyc
+
+# Логи и скриншоты node-monitor (раньше не были прикрыты)
+node-monitor.log
+node-monitor.png

@@ -1,4 +1,0 @@
-
-(node-monitor.py:70332): libayatana-appindicator-WARNING **: 03:39:14.347: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code.
-/mnt/data/projects/ParanoidX/node-monitor.py:600: DeprecationWarning: Gtk.Widget.modify_font is deprecated
-  self._log_textview.modify_font(Pango.FontDescription("monospace 9"))
