@@ -3,10 +3,11 @@
 package registry
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log/slog"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -316,8 +317,24 @@ func SelectBestNodes(candidates []*NodeInfo, n int) []*NodeInfo {
 	return out
 }
 
-// GenerateNodeID creates a short unique node identifier.
+// GenerateNodeID returns a node identifier: "node-" + 128-bit hex body.
+// The first 8 bytes are a crypto/rand salt, so every issuance yields a
+// fresh identifier even for the same key. The last 8 bytes are the first
+// 8 bytes of SHA-256(pubkey), binding the identifier to the key owner
+// without leaking the key itself — the old implementation accepted
+// pubkey and ignored it.
+//
+// Replaces the 32-bit body, which had two defects: the h[:8] slice over
+// "%x" output of struct{uint32} panicked whenever the random value was
+// below 2^20 (hex part shorter than 6 chars), and the birthday paradox
+// made collisions likely at ~10k nodes. On crypto/rand failure it
+// returns "" — a weakly-salted identifier is worse than none.
 func GenerateNodeID(pubkey string) string {
-	h := fmt.Sprintf("%x", struct{ uint32 }{rand.Uint32()})
-	return "node-" + h[:8]
+	var body [16]byte
+	if _, err := rand.Read(body[:8]); err != nil {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(pubkey))
+	copy(body[8:], sum[:8])
+	return "node-" + hex.EncodeToString(body[:])
 }
