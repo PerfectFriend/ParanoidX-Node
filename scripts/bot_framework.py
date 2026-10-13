@@ -49,8 +49,8 @@ class BotConfig:
     session_file: Path | None = None
     prompt_log: Path | None = None
     bridge_log: Path | None = None
-    data_dir: Path = Path('/home/tomas/.local/share/simplex-node')
-    kilo_bin: Path = Path('/home/tomas/.kilo/bin/kilo')
+    data_dir: Path = Path(os.environ.get('ISLE_HOME', str(Path.home()))) / '.local' / 'share' / 'simplex-node'
+    kilo_bin: Path = Path(os.environ.get('ISLE_HOME', str(Path.home()))) / '.kilo' / 'bin' / 'kilo'
     send_script: Path | None = None
     poll_interval: float = 2.0
     kilo_timeout: int = 180

@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 set -euo pipefail
 
 # post-reboot-restore.sh
@@ -20,11 +21,11 @@ export no_proxy="$NO_PROXY"
 # (ранее: symlink на /run/media/tomas/SIMPLEX-USB/radio — убрано, radio на /mnt/data/media/radio)
 
 # Нативный xray вместо Docker V2Ray
-XRAY_BIN="/home/tomas/bin/v2ray/xray"
-XRAY_CONFIG="/home/tomas/bin/v2ray/config.json"
+XRAY_BIN="$ISLE_HOME/bin/v2ray/xray"
+XRAY_CONFIG="$ISLE_HOME/bin/v2ray/config.json"
 if [ -x "$XRAY_BIN" ] && [ -f "$XRAY_CONFIG" ]; then
   if ! pgrep -x xray >/dev/null 2>&1; then
-    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > /home/tomas/.local/share/ParanoidX.logs/xray.log 2>&1 &
+    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > $ISLE_HOME/.local/share/ParanoidX.logs/xray.log 2>&1 &
     echo "xray started (native)"
   else
     echo "xray already running (native)"
@@ -33,11 +34,11 @@ fi
 
 ADMIN_TOKEN=""
 ADMIN_CHAT=""
-if [ -f /home/tomas/.config/opencode-tg-bot.token ]; then
-  ADMIN_TOKEN=$(cat /home/tomas/.config/opencode-tg-bot.token)
+if [ -f $ISLE_HOME/.config/opencode-tg-bot.token ]; then
+  ADMIN_TOKEN=$(cat $ISLE_HOME/.config/opencode-tg-bot.token)
 fi
-if [ -f /home/tomas/.config/opencode-tg-bot.chat ]; then
-  ADMIN_CHAT=$(cat /home/tomas/.config/opencode-tg-bot.chat)
+if [ -f $ISLE_HOME/.config/opencode-tg-bot.chat ]; then
+  ADMIN_CHAT=$(cat $ISLE_HOME/.config/opencode-tg-bot.chat)
 fi
 
 send_tg() {
@@ -49,7 +50,7 @@ send_tg() {
   fi
 }
 
-LOG="/home/tomas/.local/share/ParanoidX.logs/post-reboot-restore.log"
+LOG="$ISLE_HOME/.local/share/ParanoidX.logs/post-reboot-restore.log"
 mkdir -p "$(dirname "$LOG")"
 exec > >(tee -a "$LOG") 2>&1
 
@@ -58,16 +59,16 @@ send_tg "🔄 Post-reboot restore started at $(date '+%H:%M:%S')"
 
 # 1) Fix permissions
 echo "[1/10] Fixing permissions..."
-chown -R tomas:tomas /home/tomas/.local/share/simplex-node 2>/dev/null || true
-chown -R tomas:tomas /home/tomas/ParanoidX 2>/dev/null || true
-chmod +x /home/tomas/ParanoidX/scripts/*.sh /home/tomas/ParanoidX/scripts/*.py 2>/dev/null || true
-chmod +x /home/tomas/bin/ParanoidX 2>/dev/null || true
+chown -R tomas:tomas $ISLE_HOME/.local/share/simplex-node 2>/dev/null || true
+chown -R tomas:tomas $ISLE_HOME/ParanoidX 2>/dev/null || true
+chmod +x $ISLE_HOME/ParanoidX/scripts/*.sh $ISLE_HOME/ParanoidX/scripts/*.py 2>/dev/null || true
+chmod +x $ISLE_HOME/bin/ParanoidX 2>/dev/null || true
 echo "permissions fixed"
 send_tg "✅ Permissions fixed"
 
 # 2) Start docker stack (tor, smp, xftp, coturn — v2ray заменён на нативный xray)
 echo "[2/10] Starting docker stack..."
-cd /home/tomas/ParanoidX/docker
+cd $ISLE_HOME/ParanoidX/docker
 if command -v docker >/dev/null 2>&1; then
   if docker compose up -d --build; then
     echo "docker stack started (tor, smp, xftp, coturn)"
@@ -100,8 +101,8 @@ if pgrep -x ParanoidX >/dev/null 2>&1; then
   send_tg "✅ Dashboard already running"
 else
   echo "starting simplex-node via launch-node.sh..."
-  if [ -x /home/tomas/ParanoidX/scripts/launch-node.sh ]; then
-    bash /home/tomas/ParanoidX/scripts/launch-node.sh
+  if [ -x $ISLE_HOME/ParanoidX/scripts/launch-node.sh ]; then
+    bash $ISLE_HOME/ParanoidX/scripts/launch-node.sh
     sleep 4
     if pgrep -x ParanoidX >/dev/null 2>&1; then
       echo "dashboard UP (PID $(pgrep -x ParanoidX))"
@@ -114,9 +115,9 @@ else
     echo "launch-node.sh missing, starting binary directly..."
     pkill -x ParanoidX 2>/dev/null || true
     sleep 1
-    if [ -x /home/tomas/bin/ParanoidX ]; then
-      nohup /home/tomas/bin/ParanoidX \
-        >> /home/tomas/.local/share/ParanoidX.logs/dashboard.log 2>&1 &
+    if [ -x $ISLE_HOME/bin/ParanoidX ]; then
+      nohup $ISLE_HOME/bin/ParanoidX \
+        >> $ISLE_HOME/.local/share/ParanoidX.logs/dashboard.log 2>&1 &
       echo $! > /tmp/simplex-node.pid
       sleep 4
       if pgrep -x ParanoidX >/dev/null 2>&1; then
@@ -140,14 +141,14 @@ if pgrep -f "node-monitor.py" >/dev/null 2>&1; then
   echo "  node-monitor already running (PID $MON_PID)"
   send_tg "✅ node-monitor already running"
 else
-  if [ -f /home/tomas/ParanoidX/node-monitor.py ]; then
-    GI_TYPELIB_PATH=/home/tomas/.local/share/girepository-1.0
+  if [ -f $ISLE_HOME/ParanoidX/node-monitor.py ]; then
+    GI_TYPELIB_PATH=$ISLE_HOME/.local/share/girepository-1.0
     export GI_TYPELIB_PATH
     # Unset proxy vars: urllib cannot speak socks5 (Tor), so the monitor
     # would go blind and spam restart alerts. Local API must be direct.
     env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u all_proxy \
-      -u PYTHONPATH DISPLAY=:0 nohup /usr/bin/python3 /home/tomas/ParanoidX/node-monitor.py \
-      > /home/tomas/.local/share/ParanoidX.logs/node-monitor.log 2>&1 &
+      -u PYTHONPATH DISPLAY=:0 nohup /usr/bin/python3 $ISLE_HOME/ParanoidX/node-monitor.py \
+      > $ISLE_HOME/.local/share/ParanoidX.logs/node-monitor.log 2>&1 &
     echo $! > /tmp/node-monitor.pid
     echo "  node-monitor started (PID $(cat /tmp/node-monitor.pid))"
     send_tg "✅ node-monitor started"
@@ -164,8 +165,8 @@ if [ -n "$FLUTTER_PID" ]; then
   echo "  Flutter already running (PID $FLUTTER_PID)"
   send_tg "✅ Flutter client already running"
 else
-  if [ -f /home/tomas/ParanoidX/scripts/run-isle-app.sh ]; then
-    DISPLAY=:0 nohup bash /home/tomas/ParanoidX/scripts/run-isle-app.sh \
+  if [ -f $ISLE_HOME/ParanoidX/scripts/run-isle-app.sh ]; then
+    DISPLAY=:0 nohup bash $ISLE_HOME/ParanoidX/scripts/run-isle-app.sh \
       > /tmp/isle_app_supervisor.log 2>&1 &
     echo $! > /tmp/isle-app-supervisor.pid
     echo "  Flutter supervisor started (PID $(cat /tmp/isle-app-supervisor.pid))"
@@ -197,8 +198,8 @@ fi
 # 8) Quick test
 echo "[8/10] Running quick tests..."
 if pgrep -x ParanoidX >/dev/null 2>&1; then
-  if [ -x /home/tomas/ParanoidX/scripts/test-royal.sh ]; then
-    TEST_OUT=$(/home/tomas/ParanoidX/scripts/test-royal.sh 2>&1 | tail -20 || true)
+  if [ -x $ISLE_HOME/ParanoidX/scripts/test-royal.sh ]; then
+    TEST_OUT=$($ISLE_HOME/ParanoidX/scripts/test-royal.sh 2>&1 | tail -20 || true)
     echo "$TEST_OUT"
     if echo "$TEST_OUT" | grep -q "PASS"; then
       send_tg "✅ Quick test: PASS"
@@ -229,7 +230,7 @@ fi
 
 # 10) Send comprehensive startup report to Inquisitor
 echo "[10/10] Sending startup report to Inquisitor..."
-STARTUP_REPORT_SCRIPT="/home/tomas/ParanoidX/scripts/startup-report.sh"
+STARTUP_REPORT_SCRIPT="$ISLE_HOME/ParanoidX/scripts/startup-report.sh"
 if [ -x "$STARTUP_REPORT_SCRIPT" ]; then
   bash "$STARTUP_REPORT_SCRIPT" 2>&1 || echo "startup report failed (non-fatal)"
 else

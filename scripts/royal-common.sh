@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # Centralized paths for royal bot/scripts (sourced by listener, launch-*, test, send, signal, version-checkpoint).
 # Reduces 40+ hardcodes, prevents drift across A* copies, eases rename/port.
 # Usage: source "$(dirname "$0")/royal-common.sh"  or full path.
@@ -60,5 +61,5 @@ export_royal_env() {
   export ROYAL_BASE ${PARANOIDX_SRC:-$HOME/ParanoidX} DATA_DIR TOKEN_FILE CHAT_FILE OFFSET_FILE SCRIPT_DIR SCRIPTS_DIR BIN PLAN_SNAPSHOT
 }
 
-# Note: after source, scripts can use $DATA_DIR etc instead of hard /home/tomas/...
+# Note: after source, scripts can use $DATA_DIR etc instead of hard $ISLE_HOME/...
 # Listener/update_plan/version-checkpoint now use $PLAN_SNAPSHOT (dynamic).

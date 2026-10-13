@@ -7,20 +7,21 @@ Uses Kilo AI via the framework's call_kilo bridge.
 
 from __future__ import annotations
 
+import os
 import queue
 import sys
 import threading
 import time
 from pathlib import Path
 
-_SCRIPTS = Path('/home/tomas/ParanoidX/scripts')
+_SCRIPTS = Path(__file__).resolve().parent  # переносимо: каталог самого скрипта
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 from bot_framework import BotBase, BotConfig
 
 
-HOME = Path('/home/tomas')
+HOME = Path(os.environ.get('ISLE_HOME', str(Path.home())))
 DATA = HOME / '.local' / 'share' / 'simplex-node'
 
 CONFIG = BotConfig(

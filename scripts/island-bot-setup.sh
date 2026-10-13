@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # island-bot-setup.sh
 # Prepares the "Island Royal Services" bot profile using official simplex-chat CLI.
 # This makes the Royal Treasure Island's soul accessible via SimpleX Chat protocol as transport.
@@ -190,7 +191,7 @@ write_full_contact_file() {
     echo "Реальный статус: МОСТ ПОДКЛЮЧЕН (bridge \"connected to Island Services CLI WS — the gates to the silver soul are open\", меню команд настроено, /set bot commands выполнено). Реальные данные в командах (/wallet серебро из резерва, /radio реальные анонсы из Vault, /market реальные лоты из API, /tokenize /id из rwa_registry, /vault реальные файлы)."
     echo ""
     echo "Чтобы получить ТВОЙ личный simplex:/contact#... ссылку для добавления:"
-    echo "  1. Запусти интерактивно: /home/tomas/bin/simplex-chat-island -d /home/tomas/.local/share/simplex-node/island-bot --socks-proxy 127.0.0.1:9050 -s smp://...@onion:5223"
+    echo "  1. Запусти интерактивно: $ISLE_HOME/bin/simplex-chat-island -d $ISLE_HOME/.local/share/simplex-node/island-bot --socks-proxy 127.0.0.1:9050 -s smp://...@onion:5223"
     echo "  2. /address"
     echo "  3. Скопируй выданную ссылку (или QR в приложении) и добавь как контакт."
     echo ""

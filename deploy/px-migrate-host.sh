@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # px-migrate-host.sh — перенос ноды ParanoidX на новый host.
 #
 #   ./deploy/px-migrate-host.sh doctor        # проверить новый host
@@ -18,7 +19,7 @@
 #      транспорт. Без него нода поднимется пустой.
 #   4. Секреты: onion-ключи, TLS-сертификаты coturn, TURN-секрет.
 #
-# И главное: 15 из 16 юнитов содержат жёсткий путь /home/tomas. На хосте
+# И главное: 15 из 16 юнитов содержат жёсткий путь $ISLE_HOME. На хосте
 # с другим пользователем они не запустятся. Скрипт это переписывает.
 #
 # Скрипт НИЧЕГО не делает неявно: destructive-шаги требуют подтверждения,
@@ -119,7 +120,7 @@ cmd_doctor() {
 
   say "Аутентификация sudo"
   if sudo -n true 2>/dev/null; then ok "sudo без пароля (свежий кэш)"
-  else info "sudo спросит пароль один раз — нужен BabaYaga99"; fi
+  else info "sudo спросит пароль один раз — вводит оператор вручную (пароли не хранятся в git)"; fi
 
   echo
   if [ "$miss" = 0 ]; then ok "host готов к установке"; return 0
@@ -224,7 +225,7 @@ EOF
 #
 # В git юниты лежат ШАБЛОНАМИ: @HOME@, @REPO@, @USER@. Так они portable
 # сразу. Но prepare может положить в пакет СЫРЫЕ юниты, снятые с
-# /etc/systemd/system старого хоста, где вместо @HOME@ — /home/tomas.
+# /etc/systemd/system старого хоста, где вместо @HOME@ — $ISLE_HOME.
 # Поэтому обрабатываем оба вида: сначала плейсхолдеры, потом старый путь.
 rewrite_paths() {
   local f="$1"
@@ -236,9 +237,9 @@ rewrite_paths() {
     "$f"
   # 2) старые абсолютные пути — если юнит снят с чужого хоста
   sed -i \
-    -e "s#/home/tomas/ParanoidX#${REPO}#g" \
-    -e "s#/home/tomas/simplex-node#${REPO}#g" \
-    -e "s#/home/tomas#${HOME_DIR}#g" \
+    -e "s#$ISLE_HOME/ParanoidX#${REPO}#g" \
+    -e "s#$ISLE_HOME/simplex-node#${REPO}#g" \
+    -e "s#$ISLE_HOME#${HOME_DIR}#g" \
     -e "s#\bUser=tomas\b#User=${USER_NAME}#g" \
     -e "s#\bGroup=tomas\b#Group=${USER_NAME}#g" \
     -e "s#\bUSER=tomas\b#USER=${USER_NAME}#g" \
@@ -331,7 +332,7 @@ cmd_install() {
     if [ "$DRY_RUN" != 1 ]; then
       cp "$REPO/deploy/simplex-node.json.template" "$CONFIG_FILE"
       # Подставляем пути нового хоста
-      sed -i -e "s#/home/tomas#${HOME_DIR}#g" -e "s#/home/tomas/ParanoidX#${REPO}#g" \
+      sed -i -e "s#$ISLE_HOME#${HOME_DIR}#g" -e "s#$ISLE_HOME/ParanoidX#${REPO}#g" \
              -e "s#\"tomas\"#\"${USER_NAME}\"#g" "$CONFIG_FILE"
       ok "конфиг создан из шаблона (ПРОВЕРЬ значения!)"
       warn "адреса и порты в шаблоне — заглушки, выставь свои"
@@ -592,7 +593,7 @@ px-migrate-host.sh — перенос ноды ParanoidX на новый host
   OUT_DIR=DIR   куда prepare положит пакет
 
 Юниты переписываются под пользователя и home этого хоста:
-в 15 из 16 юнитов исходно зашит путь /home/tomas.
+в 15 из 16 юнитов исходно зашит путь $ISLE_HOME.
 EOF
 }
 

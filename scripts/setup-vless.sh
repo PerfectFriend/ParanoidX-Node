@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # setup-vless.sh — Generate VLESS+Reality server config, client config, systemd service
 # Usage: ./scripts/setup-vless.sh [--uuid <UUID>] [--port 443] [--dest <domain>] [--sni <sni>]
 # Replaces deprecated VMess with modern VLESS+XTLS-Reality (forward secrecy, no fingerprints)
@@ -29,16 +30,16 @@ fi
 
 # Generate Reality keypair if not provided
 if [ -z "$PRIV_KEY" ]; then
-  REALITY_KEYS=$(/home/tomas/bin/v2ray/xray x25519)
+  REALITY_KEYS=$($ISLE_HOME/bin/v2ray/xray x25519)
   PRIV_KEY=$(echo "$REALITY_KEYS" | grep "PrivateKey:" | awk '{print $2}')
   PUB_KEY=$(echo "$REALITY_KEYS" | grep "Password (PublicKey):" | awk '{print $3}')
 else
-  PUB_KEY=$(echo "$PRIV_KEY" | /home/tomas/bin/v2ray/xray x25519 -i /dev/stdin | grep "Password (PublicKey):" | awk '{print $3}')
+  PUB_KEY=$(echo "$PRIV_KEY" | $ISLE_HOME/bin/v2ray/xray x25519 -i /dev/stdin | grep "Password (PublicKey):" | awk '{print $3}')
 fi
 
 DATA_DIR="${HOME}/.local/share/simplex-node"
 VLESS_DIR="${DATA_DIR}/vless"
-XRAY_BIN="/home/tomas/bin/v2ray/xray"
+XRAY_BIN="$ISLE_HOME/bin/v2ray/xray"
 SHORT_ID=$(openssl rand -hex 8)
 
 mkdir -p "${VLESS_DIR}" "${DATA_DIR}/logs"
@@ -155,7 +156,7 @@ echo "  Server:     ${VLESS_DIR}/server.json"
 echo "  Client:     ${VLESS_DIR}/client_patch.json"
 
 # === Apply client patch to main xray config ===
-MAIN_CONFIG="/home/tomas/bin/v2ray/config.json"
+MAIN_CONFIG="$ISLE_HOME/bin/v2ray/config.json"
 if [ -f "${MAIN_CONFIG}" ]; then
   if command -v jq &>/dev/null; then
     CLIENT_OUTBOUND=$(cat "${VLESS_DIR}/client_patch.json")

@@ -1,18 +1,19 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # restore-tor-keys.sh
 # Защита от потери onion-адресов при перезапуске.
 # Восстанавливает ключи скрытых сервисов Tor из бекапа,
 # если bind mount директория оказалась пустой.
 # Запускать ПЕРЕД docker compose up.
 #
-# Бекап: /home/tomas/.local/share/ParanoidX/tor-keys-backup/
+# Бекап: $ISLE_HOME/.local/share/ParanoidX/tor-keys-backup/
 # (вне git-репозитория, не удаляется при git clean)
 
 set -e
 shopt -s nullglob
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKUP_BASE="/home/tomas/.local/share/ParanoidX/tor-keys-backup"
+BACKUP_BASE="$ISLE_HOME/.local/share/ParanoidX/tor-keys-backup"
 SERVICES=("smp" "xftp" "dashboard" "ice" "auditor")
 RESTORED=0
 

@@ -8,7 +8,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=tomas
-ExecStart=/home/tomas/bin/simplex-bridge -data /home/tomas/.local/share/simplex-node
+ExecStart=%h/bin/simplex-bridge -data %h/.local/share/simplex-node
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal

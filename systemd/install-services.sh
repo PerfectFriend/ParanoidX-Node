@@ -1,10 +1,11 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # install-services.sh — Install and start simplex-node systemd services
 # Run: sudo bash install-services.sh
 
 set -euo pipefail
 
-SYS_DIR="/home/tomas/simplex-node/systemd"
+SYS_DIR="$ISLE_HOME/simplex-node/systemd"
 
 echo "=== Installing simplex-node systemd services ==="
 
@@ -28,7 +29,7 @@ cp "$SYS_DIR/simplex-node-admin-bot.service" /etc/systemd/system/
 cp "$SYS_DIR/simplex-node-royal-bot.service" /etc/systemd/system/
 
 # Optional: poet bot (enable if token configured)
-if [ -f /home/tomas/.config/poet-bot.token ]; then
+if [ -f $ISLE_HOME/.config/poet-bot.token ]; then
   cp "$SYS_DIR/simplex-node-poet-bot.service" /etc/systemd/system/
 fi
 
@@ -44,7 +45,7 @@ systemctl enable simplex-node-bridge.service
 systemctl enable simplex-node-admin-bot.service
 systemctl enable simplex-node-royal-bot.service
 
-if [ -f /home/tomas/.config/poet-bot.token ]; then
+if [ -f $ISLE_HOME/.config/poet-bot.token ]; then
   systemctl enable simplex-node-poet-bot.service
 fi
 
@@ -56,7 +57,7 @@ sleep 2
 systemctl start simplex-node-admin-bot.service
 systemctl start simplex-node-royal-bot.service
 
-if [ -f /home/tomas/.config/poet-bot.token ]; then
+if [ -f $ISLE_HOME/.config/poet-bot.token ]; then
   systemctl start simplex-node-poet-bot.service
 fi
 

@@ -17,17 +17,18 @@ Any other text → AI assistant (public session).
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
-_SCRIPTS = Path('/home/tomas/ParanoidX/scripts')
+_SCRIPTS = Path(__file__).resolve().parent  # переносимо: каталог самого скрипта
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 from bot_framework import BotBase, BotConfig
 
 
-HOME = Path('/home/tomas')
+HOME = Path(os.environ.get('ISLE_HOME', str(Path.home())))
 DATA = HOME / '.local' / 'share' / 'simplex-node'
 SCRIPTS = HOME / 'simplex-node' / 'scripts'
 PROJECT = HOME / 'simplex-node'

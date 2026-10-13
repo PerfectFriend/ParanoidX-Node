@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # Запускает node-monitor.py, дождавшись рабочей графической сессии.
 #
 # Зачем: раньше node-monitor.service стартовал по WantedBy=default.target.
@@ -91,10 +92,10 @@ unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy ALL_PROXY all_proxy
 # КРИТИЧНО: убрать PYTHONPATH. В окружении Hermes он указывает на
 # venv python3.11, и монитор импортировал PIL ОТТУДА:
 #   ImportError: cannot import name '_imaging' from 'PIL'
-#   (/home/tomas/.hermes/hermes-agent/venv/lib/python3.11/site-packages/PIL)
+#   ($ISLE_HOME/.hermes/hermes-agent/venv/lib/python3.11/site-packages/PIL)
 # Собранный под 3.11 `_imaging` не грузится в системном 3.14, и падал
 # весь процесс с status=1. В мониторе нужны только gi и PIL из
 # системных пакетов (python3-gi, python3-pil), которые в venv отсутствуют.
 unset PYTHONPATH
 
-exec /usr/bin/python3 /home/tomas/simplex-node/node-monitor.py
+exec /usr/bin/python3 $ISLE_HOME/simplex-node/node-monitor.py

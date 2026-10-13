@@ -23,18 +23,19 @@ See bot_framework.py for all available helpers:
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 # ── framework import ──────────────────────────────────
-_SCRIPTS = Path('/home/tomas/ParanoidX/scripts')
+_SCRIPTS = Path(__file__).resolve().parent  # переносимо: каталог самого скрипта
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 from bot_framework import BotBase, BotConfig
 
 # ── paths (edit these) ────────────────────────────────
-HOME = Path('/home/tomas')
+HOME = Path(os.environ.get('ISLE_HOME', str(Path.home())))
 DATA = HOME / '.local' / 'share' / 'simplex-node'
 PROJECT = HOME / 'simplex-node'
 

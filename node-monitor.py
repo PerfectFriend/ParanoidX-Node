@@ -1305,7 +1305,7 @@ class NodeMonitor:
     def _do_stop(self):
         def run():
             log("stopping node…")
-            subprocess.run(["pkill", "-f", "^/home/tomas/bin/simplex-node"], capture_output=True)
+            subprocess.run(["pkill", "-f", f"^{os.environ.get('ISLE_HOME', os.path.expanduser('~'))}/bin/simplex-node"], capture_output=True)
             GLib.idle_add(lambda: self._notify("PX Node", "stop command sent"))
         threading.Thread(target=run, daemon=True).start()
 

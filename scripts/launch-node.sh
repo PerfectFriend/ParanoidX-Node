@@ -1,8 +1,9 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # =============================================================================
 # КАНОНИЧЕСКИЙ ЛАУНЧЕР ParanoidX
 # ВСЕГДА запускай и перезапускай ноду ТОЛЬКО этой командой:
-#   /home/tomas/ParanoidX/scripts/launch-node.sh   (or via bot "launch")
+#   $ISLE_HOME/ParanoidX/scripts/launch-node.sh   (or via bot "launch")
 #
 # ПРЯМОЙ ЗАПУСК бинаря ( ./bin/ParanoidX ... или nohup без этого скрипта )
 # создаёт фоновые задачи, которые система отслеживает и шлёт уведомления
@@ -23,11 +24,11 @@ export no_proxy="$NO_PROXY"
 # (ранее: symlink на USB — убрано, radio на /mnt/data/media/radio)
 
 # Нативный xray вместо Docker V2Ray
-XRAY_BIN="/home/tomas/bin/v2ray/xray"
-XRAY_CONFIG="/home/tomas/bin/v2ray/config.json"
+XRAY_BIN="$ISLE_HOME/bin/v2ray/xray"
+XRAY_CONFIG="$ISLE_HOME/bin/v2ray/config.json"
 if [ -x "$XRAY_BIN" ] && [ -f "$XRAY_CONFIG" ]; then
   if ! pgrep -x xray >/dev/null 2>&1; then
-    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > /home/tomas/.local/share/ParanoidX.logs/xray.log 2>&1 &
+    nohup "$XRAY_BIN" run -c "$XRAY_CONFIG" > $ISLE_HOME/.local/share/ParanoidX.logs/xray.log 2>&1 &
     echo "xray started (native, PID $!)"
   else
     echo "xray already running (native)"
@@ -72,7 +73,7 @@ mkdir -p $DATA/logs
 ROOT_AVAIL=$(df -m / 2>/dev/null | awk 'NR==2 {print $4}' || echo 0)
 DATA_MB=$(du -sm $DATA 2>/dev/null | awk '{print $1}' || echo 0)
 VAULT_USER_MB=$(du -sm --exclude='.*' $DATA/vault 2>/dev/null | awk '{print $1}' || echo 0)
-BACKUPS_MB=$(du -sm /home/tomas/A1-backups 2>/dev/null | awk '{print $1}' || echo 0)
+BACKUPS_MB=$(du -sm $ISLE_HOME/A1-backups 2>/dev/null | awk '{print $1}' || echo 0)
 if [ "$ROOT_AVAIL" -lt 5000 ] || [ "$VAULT_USER_MB" -gt 1950 ] || [ "$DATA_MB" -gt 10000 ] || [ "$BACKUPS_MB" -gt 10000 ]; then
   echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   echo ">>> ВНИМАНИЕ: МАЛО МЕСТА НА ДИСКЕ (или vault/data/backups раздулись) <<<"

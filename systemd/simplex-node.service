@@ -8,9 +8,9 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 User=root
-WorkingDirectory=/home/tomas/simplex-node/docker
-ExecStart=/home/tomas/simplex-node/docker/startup.sh
-ExecStop=/usr/bin/docker compose -f /home/tomas/simplex-node/docker/docker-compose.yml down
+WorkingDirectory=%h/simplex-node/docker
+ExecStart=%h/simplex-node/docker/startup.sh
+ExecStop=/usr/bin/docker compose -f %h/simplex-node/docker/docker-compose.yml down
 
 [Install]
 WantedBy=multi-user.target

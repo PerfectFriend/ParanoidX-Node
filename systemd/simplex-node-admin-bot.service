@@ -8,10 +8,10 @@ PartOf=simplex-node.target
 Type=simple
 User=tomas
 Group=tomas
-WorkingDirectory=/home/tomas/simplex-node
-Environment=HOME=/home/tomas
+WorkingDirectory=%h/simplex-node
+Environment=HOME=%h
 Environment=USER=tomas
-ExecStart=/usr/bin/python3 /home/tomas/simplex-node/scripts/telegram_admin_bridge.py
+ExecStart=/usr/bin/python3 %h/simplex-node/scripts/telegram_admin_bridge.py
 Restart=always
 RestartSec=5
 KillMode=control-group
@@ -24,7 +24,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=false
 NoNewPrivileges=true
-ReadWritePaths=/home/tomas
+ReadWritePaths=%h
 
 [Install]
 WantedBy=simplex-node.target

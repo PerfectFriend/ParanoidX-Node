@@ -220,7 +220,7 @@ bash scripts/restore-from-usb.sh
 bash /mnt/simplex-backup/auto-restore.sh
 
 # Force re-enable systemd (NOT recommended — causes bot 409 conflicts)
-echo 'BabaYaga99' | sudo -S systemctl enable simplex-node-dashboard.service
+echo '<SUDO_PASSWORD>' | sudo -S systemctl enable simplex-node-dashboard.service  # ПЛАЦЕХОЛДЕР — реальные пароли НИКОГДА не коммитить в git
 ```
 
 ## Windows Build (Lenovo)

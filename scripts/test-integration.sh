@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # Integration test suite for simplex-node
 # Usage: bash scripts/test-integration.sh [--host http://127.0.0.1:8080]
 
@@ -47,7 +48,7 @@ test_endpoint "stations" GET "/api/radio?action=stations" '"count"'
 test_endpoint "formula" GET "/api/radio?action=formula" '"playlist"'
 test_endpoint "liberty-voice-en" GET "/api/radio?action=playlist&station=liberty-voice-en" '"count":2'
 # Track serve tested separately (binary content)
-TRACK_RESP=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$HOST/api/radio/track?path=/home/tomas/.local/share/simplex-node/radio/%D0%9A%D0%BE%D0%BB%D1%91%D1%81%D0%B0%20%D0%B2%D1%80%D0%B0%D0%B7%D0%BD%D0%BE%D1%81%20(1).mp3" 2>/dev/null)
+TRACK_RESP=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$HOST/api/radio/track?path=$ISLE_HOME/.local/share/simplex-node/radio/%D0%9A%D0%BE%D0%BB%D1%91%D1%81%D0%B0%20%D0%B2%D1%80%D0%B0%D0%B7%D0%BD%D0%BE%D1%81%20(1).mp3" 2>/dev/null)
 if [ "$TRACK_RESP" = "200" ]; then echo "  ✓ track serve (HTTP 200)"; PASS=$((PASS+1)); else echo "  ✗ track serve (HTTP $TRACK_RESP)"; FAIL=$((FAIL+1)); FAILED_TESTS="$FAILED_TESTS  track serve\n"; fi
 
 echo ""

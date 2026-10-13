@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # Automatic Telegram command listener for royal node control.
 # Run via launch-bot-listener.sh (while once + sleep 2).
 # After each owner cmd: signal_step_done (exact "шаг (...) завершен..." template).
@@ -300,7 +301,7 @@ for u in d.get("result", []):
   print(f"New cmd from bot: {text}")
   # execute dispatch in bash (dispatch always does USER: log for full prompt, and --signal triggers the exact step done signal)
   try:
-    listener_path = os.environ.get("LISTENER") or os.environ.get("SCRIPTS_DIR","/home/tomas/ParanoidX/scripts") + "/royal-telegram-command-listener.sh"
+    listener_path = os.environ.get("LISTENER") or os.environ.get("SCRIPTS_DIR","$ISLE_HOME/ParanoidX/scripts") + "/royal-telegram-command-listener.sh"
     out = subprocess.check_output([listener_path, "dispatch", "--signal", text], stderr=subprocess.STDOUT, timeout=120).decode()
     print("Executed:", out[:200])
   except Exception as e:
@@ -322,7 +323,7 @@ if [ "$MODE" = "dispatch" ]; then
   if [ "${!#}" = "--signal" ]; then sig=1; cmdargs="${*%% --signal}"; fi
   dispatch "$cmdargs"
   if [ $sig -eq 1 ]; then
-    "$SIGNAL_DONE" "dispatch $cmdargs" "manual signal" 2>/dev/null || /home/tomas/ParanoidX/scripts/signal_step_done.sh "dispatch $cmdargs" "manual signal"
+    "$SIGNAL_DONE" "dispatch $cmdargs" "manual signal" 2>/dev/null || $ISLE_HOME/ParanoidX/scripts/signal_step_done.sh "dispatch $cmdargs" "manual signal"
   fi
   exit 0
 fi

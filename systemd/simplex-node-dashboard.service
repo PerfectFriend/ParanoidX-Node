@@ -8,12 +8,12 @@ PartOf=simplex-node.target
 Type=simple
 User=tomas
 Group=tomas
-WorkingDirectory=/home/tomas/simplex-node
-Environment=HOME=/home/tomas
+WorkingDirectory=%h/simplex-node
+Environment=HOME=%h
 Environment=USER=tomas
 ExecStartPre=/bin/bash -c 'pkill -x simplex-node 2>/dev/null; fuser -k 8080/tcp 2>/dev/null; exit 0'
-ExecStartPre=/bin/cp -f /home/tomas/simplex-node/docker/dashboard.html /home/tomas/.local/share/simplex-node/dashboard.html
-ExecStart=/home/tomas/bin/simplex-node -listen 0.0.0.0:8080 -data /home/tomas/.local/share/simplex-node
+ExecStartPre=/bin/cp -f %h/simplex-node/docker/dashboard.html %h/.local/share/simplex-node/dashboard.html
+ExecStart=%h/bin/simplex-node -listen 0.0.0.0:8080 -data %h/.local/share/simplex-node
 Restart=always
 RestartSec=5
 
@@ -24,7 +24,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=false
 NoNewPrivileges=true
-ReadWritePaths=/home/tomas
+ReadWritePaths=%h
 
 [Install]
 WantedBy=simplex-node.target

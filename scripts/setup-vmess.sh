@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # setup-vmess.sh — Generate VMess server config, client config, systemd service
 # Usage: ./scripts/setup-vmess.sh [--uuid <UUID>] [--port 10812]
 set -euo pipefail
@@ -20,7 +21,7 @@ fi
 
 DATA_DIR="${HOME}/.local/share/simplex-node"
 VMESS_DIR="${DATA_DIR}/vmess"
-XRAY_BIN="/home/tomas/bin/v2ray/xray"
+XRAY_BIN="$ISLE_HOME/bin/v2ray/xray"
 
 mkdir -p "${VMESS_DIR}" "${DATA_DIR}/logs"
 
@@ -60,7 +61,7 @@ cat > "${VMESS_DIR}/server.json" <<VMESSEOF
 VMESSEOF
 
 # === VMess Client Config Patch — replaces freedom outbound with VMess ===
-# The main xray config (/home/tomas/bin/v2ray/config.json) will have its
+# The main xray config ($ISLE_HOME/bin/v2ray/config.json) will have its
 # outbound changed from freedom to VMess pointing at the local VMess server.
 cat > "${VMESS_DIR}/client_patch.json" <<CLIEOF
 {
@@ -109,7 +110,7 @@ echo "  Server config: ${VMESS_DIR}/server.json"
 echo "  Client patch:  ${VMESS_DIR}/client_patch.json"
 
 # === Apply client patch to main xray config ===
-MAIN_CONFIG="/home/tomas/bin/v2ray/config.json"
+MAIN_CONFIG="$ISLE_HOME/bin/v2ray/config.json"
 if [ -f "${MAIN_CONFIG}" ]; then
   # Use jq if available, otherwise patch manually
   if command -v jq &>/dev/null; then

@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 # Install The Island Linux Desktop App
 # Run: sudo ./install.sh
 # Works from the release tarball or source tree
@@ -71,7 +72,7 @@ Type=Application
 Name=$APP_TITLE
 Comment=Saint Mary Liberty Island — Silver-Backed Private Sovereign Network
 Exec=$INSTALL_DIR/$BINARY %F
-Icon=/home/tomas/.local/share/icons/hicolor/512x512/apps/$APP_NAME.png
+Icon=$ISLE_HOME/.local/share/icons/hicolor/512x512/apps/$APP_NAME.png
 Terminal=false
 Categories=Finance;Office;
 StartupNotify=true

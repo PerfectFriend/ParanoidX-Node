@@ -1,4 +1,5 @@
 #!/bin/bash
+ISLE_HOME="${ISLE_HOME:-$HOME}"  # переносимый дом проекта: переопредели env-ом, дефолт $HOME
 #
 # ParanoidX — clean production startup orchestrator
 # - Prepares host directories with correct ownership (no root-owned spam)
@@ -30,9 +31,9 @@ error()  { echo -e "${RED}❌ $*${NC}"; ERRORS=$((ERRORS+1)); }
 section(){ echo ""; echo "════════════════════════════════════════════════════════════════"; echo "  $1"; echo "════════════════════════════════════════════════════════════════"; }
 
 # === Paths (edit if your layout differs) ===
-DASHBOARD_BIN="/home/tomas/bin/ParanoidX"
+DASHBOARD_BIN="$ISLE_HOME/bin/ParanoidX"
 DASHBOARD_LISTEN="0.0.0.0:8080"
-DASHBOARD_DATA_DIR="/home/tomas/.local/share/ParanoidX"
+DASHBOARD_DATA_DIR="$ISLE_HOME/.local/share/ParanoidX"
 TOR_DIR="$DASHBOARD_DATA_DIR/tor"
 
 mkdir -p "$DASHBOARD_DATA_DIR" "$TOR_DIR" "$SCRIPT_DIR/tor/hidden_services/smp" "$SCRIPT_DIR/tor/hidden_services/xftp" "$SCRIPT_DIR/tor/hidden_services/dashboard" "$SCRIPT_DIR/tor/hidden_services/ice" "$SCRIPT_DIR/tor/hidden_services/auditor"
@@ -265,7 +266,7 @@ bootstrap_smp_if_needed
 bootstrap_xftp_if_needed
 
 # === Restore Tor onion keys from backup (защита от потери адресов) ===
-# Бекап в /home/tomas/.local/share/ParanoidX/tor-keys-backup/ — вне git
+# Бекап в $ISLE_HOME/.local/share/ParanoidX/tor-keys-backup/ — вне git
 if [ -x "$SCRIPT_DIR/restore-tor-keys.sh" ]; then
     section "Restoring Tor hidden service keys (onion address persistence)"
     "$SCRIPT_DIR/restore-tor-keys.sh" || warn "restore-tor-keys.sh exited with error"
@@ -413,7 +414,7 @@ if [[ -n "$ONION_ICE" ]]; then success "ICE/TURN onion: $ONION_ICE"; else warn "
 if [[ -n "$ONION_AUDITOR" ]]; then success "Auditor onion: $ONION_AUDITOR"; else warn "Auditor onion not ready yet"; fi
 
 # === Backup Tor keys after successful extraction (keep backup fresh) ===
-BACKUP_BASE="/home/tomas/.local/share/ParanoidX/tor-keys-backup"
+BACKUP_BASE="$ISLE_HOME/.local/share/ParanoidX/tor-keys-backup"
 for d in smp xftp dashboard ice auditor; do
     BIND_DIR="$SCRIPT_DIR/tor/hidden_services/$d"
     KEY_FILE="$BIND_DIR/hs_ed25519_secret_key"
