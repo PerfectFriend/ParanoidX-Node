@@ -322,9 +322,9 @@ func TestPersistence(t *testing.T) {
 
 // TestGenerateNodeID handles the TestGenerateNodeID HTTP request.
 func TestGenerateNodeID(t *testing.T) {
-	id1 := GenerateNodeID("pk1")
-	id2 := GenerateNodeID("pk2")
-	id3 := GenerateNodeID("pk1") // same pubkey, should differ due to randomness
+	id1 := GenerateNodeID("pk1", nil)
+	id2 := GenerateNodeID("pk2", nil)
+	id3 := GenerateNodeID("pk1", nil) // same pubkey, should differ due to randomness
 
 	// Check prefix
 	if !strings.HasPrefix(id1, "node-") {
@@ -368,6 +368,46 @@ func TestGenerateNodeID(t *testing.T) {
 	if samePrefix > 4 { // >4 matching hex chars = >16 bits same prefix is very unlikely
 		t.Logf("warning: same pubkey IDs share %d hex prefix chars (unlikely but possible)", samePrefix)
 	}
+}
+
+// TestGenerateNodeIDFallback tests the fallback path when randomness source fails.
+func TestGenerateNodeIDFallback(t *testing.T) {
+	// Reader that always returns an error
+	errReader := &errorReader{}
+
+	id1 := GenerateNodeID("pk1", errReader)
+	id2 := GenerateNodeID("pk1", errReader)
+
+	// Should still produce valid node IDs with prefix and length
+	if !strings.HasPrefix(id1, "node-") {
+		t.Fatalf("expected node- prefix, got %s", id1)
+	}
+	const expectedLen = 5 + 32
+	if len(id1) != expectedLen {
+		t.Fatalf("expected ID length %d, got %d: %s", expectedLen, len(id1), id1)
+	}
+
+	// Fallback uses timestamp, so two calls in quick succession should produce
+	// different IDs (nanosecond precision). If error check is removed (mutation),
+	// randomBytes stays all zeros and both IDs would be identical.
+	if id1 == id2 {
+		t.Fatalf("fallback should produce different IDs on each call (timestamp entropy), got same: %s", id1)
+	}
+
+	// Verify hex chars
+	hexPart := id1[5:]
+	for _, c := range hexPart {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			t.Fatalf("fallback ID contains non-hex chars: %s", id1)
+		}
+	}
+}
+
+// errorReader is an io.Reader that always returns an error.
+type errorReader struct{}
+
+func (e *errorReader) Read(p []byte) (n int, err error) {
+	return 0, fmt.Errorf("intentional read error for testing")
 }
 
 

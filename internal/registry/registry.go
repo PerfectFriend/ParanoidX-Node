@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -320,13 +321,18 @@ func SelectBestNodes(candidates []*NodeInfo, n int) []*NodeInfo {
 // GenerateNodeID creates a unique node identifier derived from the public key.
 // Uses 128 bits of entropy (crypto/rand) combined with a SHA-256 hash of the pubkey.
 // Format: "node-" + 32 hex chars (128 bits).
-func GenerateNodeID(pubkey string) string {
+// randSrc is the source of randomness; defaults to crypto/rand.Reader if nil (for testing).
+func GenerateNodeID(pubkey string, randSrc io.Reader) string {
 	// Hash the public key to bind the ID to the key owner
 	pubkeyHash := sha256.Sum256([]byte(pubkey))
 
 	// Generate 16 bytes (128 bits) of cryptographically secure randomness
 	randomBytes := make([]byte, 16)
-	if _, err := rand.Read(randomBytes); err != nil {
+	if randSrc == nil {
+		randSrc = rand.Reader
+	}
+	_, err := randSrc.Read(randomBytes)
+	if err != nil {
 		// Fallback: hash pubkey + timestamp (should never happen with crypto/rand)
 		fallback := sha256.Sum256(append(pubkeyHash[:], byte(time.Now().UnixNano())))
 		return "node-" + fmt.Sprintf("%x", fallback[:16])
