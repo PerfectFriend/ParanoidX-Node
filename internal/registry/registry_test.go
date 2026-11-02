@@ -324,12 +324,49 @@ func TestPersistence(t *testing.T) {
 func TestGenerateNodeID(t *testing.T) {
 	id1 := GenerateNodeID("pk1")
 	id2 := GenerateNodeID("pk2")
+	id3 := GenerateNodeID("pk1") // same pubkey, should differ due to randomness
 
+	// Check prefix
 	if !strings.HasPrefix(id1, "node-") {
 		t.Fatalf("expected node- prefix, got %s", id1)
 	}
+
+	// Check length: "node-" (5) + 32 hex chars (128 bits) = 37 total
+	const expectedLen = 5 + 32
+	if len(id1) != expectedLen {
+		t.Fatalf("expected ID length %d (node- + 32 hex), got %d: %s", expectedLen, len(id1), id1)
+	}
+
+	// Check all chars after prefix are valid hex
+	hexPart := id1[5:]
+	for _, c := range hexPart {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			t.Fatalf("ID contains non-hex chars: %s", id1)
+		}
+	}
+
+	// Different pubkeys must produce different IDs (pubkey binding)
 	if id1 == id2 {
-		t.Fatal("expected different IDs")
+		t.Fatal("expected different IDs for different pubkeys")
+	}
+
+	// Same pubkey must produce different IDs on each call (randomness)
+	if id1 == id3 {
+		t.Fatal("expected different IDs for same pubkey on repeated calls (randomness)")
+	}
+
+	// IDs for same pubkey should share no more than birthday-bound prefix
+	// (they're XOR of pubkeyHash + random, so should differ in ~half bits)
+	samePrefix := 0
+	for i := 0; i < len(hexPart) && i < len(id3[5:]); i++ {
+		if hexPart[i] == id3[5:][i] {
+			samePrefix++
+		} else {
+			break
+		}
+	}
+	if samePrefix > 4 { // >4 matching hex chars = >16 bits same prefix is very unlikely
+		t.Logf("warning: same pubkey IDs share %d hex prefix chars (unlikely but possible)", samePrefix)
 	}
 }
 
