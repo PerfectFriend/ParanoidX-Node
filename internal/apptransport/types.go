@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"time"
 )
 
@@ -103,9 +104,15 @@ type Status struct {
 	UptimeSeconds   int64 `json:"uptime_seconds"`
 }
 
-func RandomSecret() ([]byte, error) {
+// RandomSecret generates a fresh 32-byte master secret.
+// If randSrc is nil, crypto/rand.Reader is used. Inject a failing reader
+// (e.g., errorReader) in tests to exercise the error path.
+func RandomSecret(randSrc io.Reader) ([]byte, error) {
+	if randSrc == nil {
+		randSrc = rand.Reader
+	}
 	buf := make([]byte, 32)
-	if _, err := rand.Read(buf); err != nil {
+	if _, err := randSrc.Read(buf); err != nil {
 		return nil, err
 	}
 	return buf, nil
@@ -153,7 +160,7 @@ func normalizeConfig(cfg Config) (Config, error) {
 		cfg.Clock = time.Now
 	}
 	if len(cfg.Secret) == 0 {
-		secret, err := RandomSecret()
+		secret, err := RandomSecret(rand.Reader)
 		if err != nil {
 			return cfg, err
 		}

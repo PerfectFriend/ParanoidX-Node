@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"io"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
@@ -66,9 +67,14 @@ func DeriveSubkeys(master, salt []byte) (encKey, authKey []byte) {
 }
 
 // NewSalt returns a fresh random salt for key derivation.
-func NewSalt() ([]byte, error) {
+// If randSrc is nil, crypto/rand.Reader is used. Inject a failing reader
+// (e.g., errorReader) in tests to exercise the error path.
+func NewSalt(randSrc io.Reader) ([]byte, error) {
+	if randSrc == nil {
+		randSrc = rand.Reader
+	}
 	salt := make([]byte, SaltSize)
-	if _, err := rand.Read(salt); err != nil {
+	if _, err := randSrc.Read(salt); err != nil {
 		return nil, err
 	}
 	return salt, nil

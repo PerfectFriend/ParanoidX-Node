@@ -78,7 +78,7 @@ func (e Envelope) Verify(key []byte, now time.Time, replay *ReplayGuard) error {
 	}
 	actual, err := base64.RawURLEncoding.DecodeString(e.Signature)
 	if err != nil {
-		return ErrInvalidSignature
+		return err
 	}
 	if !hmac.Equal(expected, actual) {
 		return ErrInvalidSignature

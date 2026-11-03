@@ -20,6 +20,7 @@ package apptransport
 // encryption key yields nothing about another's.
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -75,11 +76,11 @@ func (k *Keyring) Register(name string) (*AppKeys, error) {
 		return nil, fmt.Errorf("%w: %s", ErrAppExists, id)
 	}
 
-	secret, err := RandomSecret()
+	secret, err := RandomSecret(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
-	salt, err := NewSalt()
+	salt, err := NewSalt(rand.Reader)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +104,7 @@ func (k *Keyring) Adopt(name string, secret, salt []byte) (*AppKeys, error) {
 		return nil, fmt.Errorf("secret must be %d bytes, got %d", KeySize, len(secret))
 	}
 	if len(salt) == 0 {
-		if salt, err = NewSalt(); err != nil {
+		if salt, err = NewSalt(rand.Reader); err != nil {
 			return nil, err
 		}
 	}

@@ -14,6 +14,7 @@ package apptransport
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"testing"
 	"time"
@@ -21,11 +22,11 @@ import (
 
 func mustMaster(t *testing.T) ([]byte, []byte) {
 	t.Helper()
-	master, err := RandomSecret()
+	master, err := RandomSecret(rand.Reader)
 	if err != nil {
 		t.Fatalf("RandomSecret: %v", err)
 	}
-	salt, err := NewSalt()
+	salt, err := NewSalt(rand.Reader)
 	if err != nil {
 		t.Fatalf("NewSalt: %v", err)
 	}
